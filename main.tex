@@ -84,7 +84,7 @@ Deep learning has been enabled by better networks, better hardware and more data
 
 An imaging device gathers the light reflected by 3D objects to create a 2D representation of the scene.
 
-\subsection{Pinhole camera model}
+\subsubsection{Pinhole camera model}
 The "pinhole camera" is the simplest camera model we can define.
 Light goes through the very small pinhole (to not have saturation) and hits the image plane.
 Geometrically, the image is achieved by drawing straight rays from scene points through the hold up to the image plane.
@@ -134,7 +134,7 @@ As we previously said, the image formation process deals with mapping a 3D space
 A given scene point is mapped into an image point, but an image point is mapped onto a 3D line.
 For an image point we can only state that its corresponding scene point lays on al ine but cannot disambiguate a specific 3D point along such a line.
 
-\subsection{Stereo images}
+\subsubsection{Stereo images}
 
 The solution is to use multiple images (at least two) to create stereo vision.
 The human visual system is a stereo vision system.
@@ -168,7 +168,7 @@ In standard stereo geometry since we are given just two 2D images there is no in
 We can recall that the camera have parallel axes, and so we know that we can search for the correspondence alogn the horizontal lines.
 This task is called stereo matching.
 
-\subsection{Stereo correspondence}
+\subsubsection{Stereo correspondence}
 Given a point in one image find it in the other image which is the projection of the same 3D point.
 Such image points are called corresponding points.
 \textbf{Points farther away have a smaller disparity, while close poitns have a larger display}
@@ -192,7 +192,7 @@ The images of parallel 3D lines intersect at a point, called \textbf{vanishing p
 
 If the lines are parallel to the image plane they meet at infinity.
 
-\subsection{Epipolar geometry}
+\subsubsection{Epipolar geometry}
 
 What if the two cameras are no longer aligned? Do we need to search through the whole image?
 We can project the line related to point $P_L$ in the right plane and search across that line.
@@ -210,7 +210,7 @@ Searching through oblique epipolar lines is awkward, and computationally is less
 What people do in practice is to convert epipolar geometry to standard geometry with rectification/warping.
 We warp the images as if they were acquired through a standard geometry, then we can compute and applyto both images a transformation known as rectification.
 
-\subsection{Depth of Field (DOF)}
+\subsubsection{Depth of Field (DOF)}
 
 A scene point is on focus when all its light rays gathered by the camera hit the image plane at the same point.
 In a pinhole device this happens to all scene points because of the very small size of the hole, so that the camera features an infinite Depth of Field (DOF).
@@ -220,7 +220,7 @@ The image is really sharp, but has a really low light.
 If a point is projected onto a circle instead of a point (bigger pinhole) the image is not sharp (not on focus).
 If we cannot gather through aperture we have to integrate through time, by using a longer exposure time.
 
-\subsection{Lenses}
+\subsubsection{Lenses}
 
 Lenses concentrate light, so we use them to gather more light from a scene point and focus it on a single image point.
 This enables much smaller exposure times.
@@ -258,7 +258,31 @@ The advantage of lenses is to have a small exposure time for capturing moving ob
   \label{fig:lens_focus}
 \end{figure}
 
-\paragraph{Diaphragm}
+\subsubsection{Diaphragm}
+
+In theory, when imaging a scene through a thin lens, only the points at a certain distance can be on focus, all the others appear blurred into circles.
+However, as long as the circles are smaller than the size of the photosensing elements (a single pixel), the image will still look on-focus.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/diaphragm.jpg}
+  \caption{Blurring at pixel level}
+  \label{fig:diaphragm}
+\end{figure}
+
+The range of distances across which the image appears on focus, due to blur circles being small enough, determines the Depth Of Field) of the imaging apparatus.
+Cameras often deploy an adjustable diaphragm (iris) to control the amount of light gathered through the effective aperture of the lens.
+\begin{itemize}
+  \item Reduce aperture $\rightarrow$ less light $\rightarrow$ smaller blur circle
+  \item More aperture $\rightarrow$ more light $\rightarrow$ larger blur circle.
+  \item Close the diaphragm $\rightarrow$ increase depth of field $\rightarrow$ not enough light $\rightarrow$ increase exposure time $\rightarrow$ moving object $\rightarrow$ motion blur $\rightarrow$ still scenes.
+\end{itemize}
+
+\subsubsection{Focusing mechanism (manually changing depth of field)}
+To focus on objects at diverse distances we need a amechanism that allows the lens (or the lens subsystem) to translate along the optical axis with respect to the fixed position of the image plane.
+
+
+\subsubsection{Image digitization}
 
 \section{Advanced Topics in Deep Learning for Computer Vision}
 
