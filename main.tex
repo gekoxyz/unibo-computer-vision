@@ -446,11 +446,109 @@ According to signal processing theory, the Mean Filter carries out a low-pass fi
 Smoothing is often aimed at image denoising, but sometimes is used to cancel out small-size unwanted details that might hinder the image analysis task.
 Linear filtering reduces noise but blurs the image, so we lose sharpness.
 
+% lecture 3
 \subsubsection{Gaussian filter}
 
+Let's try to use a more sophisticated but still linear filter.
+The gaussian filter is an LTE operator whose impulse response is a 2D Gaussian function 
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/gaussian_filter.jpg}
+  \caption{1D and 2D Gaussian plot}
+  \label{fig:gaussian_filter}
+\end{figure}
 
-% lecture 3 
+The larger the size of the gaussian kernel, the more accurate will the discrete approximation be, but the computational cost grows with the filter size.
+We should then use larger sizes for filters with higher $\sigma$, smaller sizes whenever $\sigma$ is smaller.
+A typical rule is to choose the size of the filter by capturing the interval $[-3\sigma, +3\sigma]$ since it captures 99\% of the energy of the gaussian impulse.
+The Gaussian filter is the only one which has been mathematically proven of not altering image information but just semplification.
+To speedup the filtering we can apply the 2D gaussian by doing 2 1D gaussian filterings.
+
+We also observe that the higher the $\sigma$, the higher is the smoothing caused by the filter.
+We can use this to remove details from the image.
+
+\subsubsection{Median filter}
+
+There is noise that Gaussian filters can't handle well, that is the salt and pepper noise. It's usually caused by image corruption (or broken pixels in the sensor).
+Linear filtering is ineffective and just blurs the image.
+
+We can use a \textbf{non-linear} filter, where each pixel intensity is replaced by the median over a given neighbourhood.
+Median filtering counteracts impulse noise effectively, since outliers tend to fall at either the top or the bottom end of the sorted intensities.
+Median filtering tends to keep sharper edges than linear filters such as the Mean or the Gaussian.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/median_filter_application.jpg}
+  \caption{Example of the power of the median filter}
+  \label{fig:median_filter_application}
+\end{figure}
+
+The median filter can effectively denoise the image without introducing significant blur, yet, Gaussian-like noise, such as sensor noise, cannot be dealt with by the median, as this would require computing new noiseless intensities.
+
+\subsubsection{Bilateral filter}
+
+The bilateral filter preserves edges while filtering out noise.
+It's an advanced non-linear filter to accomplish denoising of Gaussian-like noise without blurring the image.
+It's also called edge preserving smoothing.
+
+$$O(p) = \sum_{q\in S} H(p,q) \cdot I_q \,\,\,\,\,\,\,\, H(p,q) = \frac{1}{W(p)} G_{\sigma_s}(d_s(p,q))G_{\sigma_r}(d_r(p,q))$$
+
+\begin{itemize}
+  \item \textbf{spatial distance}: $d_s(p,q) = ||p-q||_2 = \sqrt{(u_p - u_q)^2 + (v_p - v_q)^2}$.
+  \item \textbf{range (intensity) distance}: $d_r(I_p, I_q) = |I_p - I_q|$.
+  \item \textbf{normalization factor}: $W(p) = \sum_{q \in S} G_{\sigma_s}(d_s(p,q))G_{\sigma_r}(d_r(p,q))$
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/bilateral_filter_application.jpg}
+  \caption{Application of the bilateral filter}
+  \label{fig:bilateral_filter_application}
+\end{figure}
+
+Given the supporting neighbourhood, neighbouring pixels take a larger weight as they are both closer and more similar to the central pixel.
+At a pixel nearby an edge, the neighbourhood falling on the oter side of the edge looks quite different and thus cannot contribute significantly to the output value due to their weights being small.
+\textbf{The kernel has to be recomputed for each pixel}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/bilateral_filter.jpg}
+  \caption{Bilateral filter differences}
+  \label{fig:bilateral_filter}
+\end{figure}
+
+\subsubsection{Non-local means filter}
+
+It's another non-linear edge preserving smoothing filter.
+The key idea is that the \textbf{similarity among patches spread over the image} can be deployed to achieve denoising.
+It's even more expensive than the bilateral filter, since it has to look at more of the image.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/nonlocalmeans_filter.jpg}
+  \caption{Non-local means filter}
+  \label{fig:nonlocalmeans_filter}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/nonlocalmeans_comparison.jpg}
+  \caption{Difference between Gaussian filter and non-local means filter}
+  \label{fig:nonlocalmeans_comparison}
+\end{figure}
+
+\subsection{Edge detection}
+
+Edge points are local features of the image that capture important information related to its semantic content.
+Edges are pixels that lie exactly in between image regions of different intensities.
+
+\subsubsection{1D step-edge}
+We can detect an edge with a sharp change of a 1D signal (1D step-edge).
+The simplest edge-detection operator relies on thresholding the absolute value of the derivative of the signal.
+
+\subsubsection{2D step-edge}
+
 \section{Advanced Topics in Deep Learning for Computer Vision}
 
 \end{document}
