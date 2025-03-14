@@ -543,11 +543,405 @@ It's even more expensive than the bilateral filter, since it has to look at more
 Edge points are local features of the image that capture important information related to its semantic content.
 Edges are pixels that lie exactly in between image regions of different intensities.
 
-\subsubsection{1D step-edge}
+\paragraph{1D step-edge}
 We can detect an edge with a sharp change of a 1D signal (1D step-edge).
 The simplest edge-detection operator relies on thresholding the absolute value of the derivative of the signal.
 
-\subsubsection{2D step-edge}
+\paragraph{2D step-edge}
+A 2D step-edge is characterized not only by its strength but also by its direction (diagonal edge).
+The operator which allows us to sense the edge in any direction is the gradient: $\nabla I(x,y) = \frac{\partial I(x,y)}{\partial x}i + \frac{\partial I(x,y)}{\partial y}j$.
+Gradient's direction gives the direction along which the function exhibits its maximum variation.
+We can use differences to approximate the gradient (since we are in the discrete world and we talk about pixels, not functions).
+We can estimate the magnitude of the gradient by using different approximations.
+We choose $|\nabla I|_{\max}=\max(|I_x|, |I_y|)$, since it's fast and invariant with respect to the edge direction.
+
+\paragraph{Edges and noise}
+In real images an edge will not look as smooth as we have seen due to noise.
+Taking derivatives of noisy signals is an ill posed problem (the solution is not robust with respect to the input variation) since derivatives amplify noise.
+Noise robustness is usually achieved by smoothing the signal before computing the derivatives required to highlight edges.
+Smoothing has the side effect of blurring true edges, making it more difficult to detect and localize them, since pixel of different colors will look similar after filtering because of the blending.
+
+\paragraph{Prewitt and Sobel}
+% We might wish to approximate partial derivatives by central differences.
+% This is done to average around the point because if we are on an edge around us there is a big transition.
+% Likewise, the central pixel can be weighted more (the center pixel should be more important).
+Prewitt and Sobel address the challenge of detecting edges in noisy environments by combining smoothing and differentiation into a single step.
+The Prewitt and Sobel operators perform spatial filtering by using $3x3$ convolution kernels.
+Each kernel smooths the image in one direction (reducing noise) and computes the derivative in the perpendicular region (highlighting edges).
+Both operators use two kernels: one detects vertical edges, and one horizontal ones.
+After convolving the image with both kernels, the gradient magnitude and direction are computed.
+
+$$\text{Magnitude} = \sqrt{G_x^2 + G_y^2} \quad\quad \text{Direction} = \arctan(\frac{G_y}{G_x})$$
+
+Prewitt is better for precise edge localization in cleaner images.
+Sobel is preferable in noisy images but may slightly blur edges.
+
+
+\subsubsection{Non-Maxima Suppression (NMS)}
+
+Detecting edges by gradient thresholding is inherently inaccurate, since it's difficult to choose the right threshold a priori.
+A better approach to detect edges may consist in finding the local maxima of the absolute value of the derivative of the signal.
+
+When dealing with 2D images, we should look for:
+\begin{itemize}
+  \item Maxima of the absolute value of the derivative (gradient magnitude).
+  \item Along the gradient direction (orthogonal to the edge direction).
+\end{itemize}
+
+We don't know in advance the correct direction to carry out Non-Maxima Suppression (NMS).
+The direction has to be estimated locally based on the gradient's direction.
+The magnitude of the gradient has to be estimated at points which do not belong to the discrete pixel grid.
+Such values can be estimated by linear interpolation of those computed at the closest point belonging to the grid.
+
+A final thresholding step on the magnitude of the gradient at the points selected by the NMS process typically helps pruning out unwanted edges due to either noise or less important details.
+
+\subsubsection{Canny's edge detector}
+Canny proposed to set forth quantitative criteria to measure the performance of an edge detector and then to find the optimal filter with respect to such criteria.
+The three criteria he proposed were:
+\begin{itemize}
+  \item \textbf{Good detection}: correctly extract edges in noisy images.
+  \item \textbf{Good localization}: distance between found and true edge should be minimum.
+  \item \textbf{One response to one edge}: detect one single edge pixel at each true edge.
+\end{itemize}
+
+A straightforward Canny edge detector can be achieved by:
+\begin{itemize}
+  \item Gaussian smoothing.
+  \item Gradient computation.
+  \item NMS along the gradient direction.
+\end{itemize}
+
+2D convolution by a Gaussian can be slow, so we can leverage on separability of the Gaussian function to speedup the calculation: $G(x,y) = G(x)G(y)$.
+
+Non Maxima-Suppression (NMS) is often followed by thresholding of gradient magnitude to help distinguish between true "semantic" edges and unwanted ones.
+Edge \textbf{streaking} may occur when magnitude varies along object contours.
+
+Canny proposed a "hysteresis" thresholding approach relying on a higher $T_h$ and a lower $T_l$ threshold.
+A pixel is taken as an edge if either the gradient magnitude is higher than $T_h$ or higher than $T_l$ and the pixel is a neighbor of an already detected edge.
+
+The hysteresis thresholding is usually carried out by tracking edge pixels along contours.
+First the edge candidates are provided by NMS, then all strong edges are picked, and then for each strong edge we track the weak edges along contours.
+
+\paragraph{Zero-crossing}
+Instead of maximum values we can look for zero-crossing of the second derivative of the signal to locate edges (instead of the peaks of the first derivative).
+This requires significant computational effort since we are calculating second derivatives.
+
+\subsubsection{Second derivative along the gradient \& Laplacian}
+The second derivative along the gradient's direction can be obtained as $n^THn$.
+
+\begin{itemize}
+  \item \textbf{Unit vector along the gradient's direction} $n = \frac{\nabla I(x,y)}{||\nabla I(x,y)||}$
+  \item \textbf{Hessian matrix} $H =  \begin{bmatrix} \frac{\partial^2 I(x,y)}{\partial x^2} & \frac{\partial^2 I(x,y)}{\partial x \partial y} \\ \frac{\partial^2 I(x,y)}{\partial y \partial x} & \frac{\partial^2 I(x,y)}{\partial x^2} \end{bmatrix} $
+\end{itemize}
+
+Computing the second derivative along the gradient turns out very expensive.
+
+\paragraph{Discrete Laplacian}
+We can use the forward and backward differences to approximate first and second order derivatives.
+It can be shown that the zero-crossing of the Laplacian typically lay close to those of the second derivative along the gradient.
+Yet, the former differential operator is much faster to compute.
+
+\subsubsection{Laplacian of Gaussian (LoG)}
+A robust edge detector should include a smoothing step to filter out noise.
+Edge detection by using the Laplacian of Gaussian (LoG) can be summarized as follows:
+\begin{itemize}
+  \item Gaussian smoothing: $\tilde{I}(x,y) = I(x,y) * G(x,y)$.
+  \item Second order differentiation by the Laplacian.
+  \item Extraction of the zero-crossing of $\nabla^2 \tilde{I}(x,y)$
+\end{itemize}
+
+Practical implementations of the LoG may deploy the properties of convolutions to speed-up the computation.
+
+We can find sign changes from minus to plus (and viceversa) between two consecutive pixels.
+Once a sign change is found, the actual edge may be localized:
+\begin{itemize}
+  \item At the pixel where the LoG is positive (darker side of the edge)
+  \item At the pixel where the LoG is negative (brighter side of the edge)
+  \item At the pixel where the \textbf{absolute} value of the LoG is smaller (it's the best choice, since the edge turns out closer to the true zero-crossing).
+\end{itemize}
+
+Using a higher $\sigma$ yields less details, so usually we use it for noisy images.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/log_application.jpg}
+  \caption{Examples of LoG application}
+  \label{fig:log_application}
+\end{figure}
+
+
+\subsection{Feature detection}
+We can create a larger image by aligning two images of the same scene.
+Aligning two images may be done with a homography, which requires at least 4 feature correspondences.
+Feature detection is also useful for object detection, since we can look for features in the source image and try to find them again in the target image.
+
+Several computer vision tasks deal with finding "Corresponding Points" between two (or more) images of a scene.
+Correspondences are image points which are the projection of the same 3D point in different views of the scene.
+Establishing correspondences may be difficult, as the points may look different in different views.
+
+\subsubsection{Local invariant features paradigm}
+The task of establishing correspondences is split into 3 successive steps:
+\begin{itemize}
+  \item \textbf{Detection} of salient points.
+  \item \textbf{Description}: computation of a suitable descriptor based on pixels in the keypoint neighbourhood.
+  \item \textbf{Matching} descriptors between images.
+\end{itemize}
+
+Descriptors should be \textbf{invariant} to as many transformations as possible.
+Ideally we want scale/rotation/illumination invariance.
+
+\subsubsection{Properties of good detectors/descriptors}
+\begin{itemize}
+  \item Detector
+  \begin{itemize}
+    \item Repeatability: it should find the same keypoints in different views of the scene despite the transformations.
+    \item Saliency: it should find keypoints surrounded by informative patterns.
+  \end{itemize}
+  \item Descriptor
+  \begin{itemize}
+    \item Distinctiveness vs. robustness trade-off: the algorithm should capture the salient information around a keypoint.
+    \item Compactness: the description should be as concise as possible.
+  \end{itemize}
+\end{itemize}
+
+Speed is desirable for both, and in particular for detectors, which need to be run on the whole image (while descriptors are computed at keypoints only).
+
+Edge pixels can be hardly told apart as they look very similar along the direction perpendicular to the gradient.
+Edges are locally ambiguous, since there are many other points that look just the same.
+
+\subsubsection{Moravec Interest Point Detector}
+We can define the \textbf{cornerness} at a point $p$, which is given by the minimum squared difference between the patch centered at $p$ and those centered at its 8 neighbours: $C(p) = \min_{q \in n_8(p)} ||N(p) - N(q)||^2$.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/cornerness.jpg}
+  \caption{Cornerness of an image segment}
+  \label{fig:cornerness}
+\end{figure}
+
+After computing the cornerness we threshold and do Non-Maxima Suppression.
+
+\subsubsection{Harris Corner Detector}
+
+Harris \& Stephens proposed to rely on a continuous formulation of the Moravec's "error" function.
+Assume to shift the image with a generic infinitesimal shift $(\Delta x, \Delta y)$:
+$w(x,y)$ is a window set to 1 around the pixel under evaluation and 0 in all the image.
+In the end we consider only the pixel around the $(x,y)$ position.
+
+Due to the shift being infinitesimal, we can deploy Taylor's expansion of the intensity function at $(x,y)$ : $f(x + \Delta x) = f(x) + f'(x) \Delta x$
+
+$M$ encodes the local image structure around the considered pixel.
+We hypothesize that $M$ is a diagonal matrix
+$M =
+\begin{matrix}
+\sum_{x,y} w(x,y) I_x(x,y)^2 & \sum_{x,y} w(x,y) I_x(x,y) I_y(x,y) \\
+\sum_{x,y} w(x,y) I_y(x,y) I_x(x,y) & \sum_{x,y} w(x,y) I_y(x,y)^2
+\end{matrix}
+=
+\begin{bmatrix}
+\lambda_1 & 0 \\
+0 & \lambda_2
+\end{bmatrix}$
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/harris_corner_detector.jpg}
+  \caption{Harris corner detector and lambda values}
+  \label{fig:harris_corner_detector}
+\end{figure}
+
+The previous considerations have general validity as $M$ is real and symmatric, and thus can always be diagonalized by a rotation of the image coordinate system.
+$$M = R\begin{bmatrix} \lambda_1 & 0 \\ 0 & \lambda_2 \end{bmatrix}R^T$$
+The columns of $R$ are the orthogonal unit eigenvectors of $M$.
+$\lambda_i$ are the corresponding eigenvalues.
+$R^T$ is the rotation matrix that aligns the image axes to the eigenvectors of M.
+
+Computing eigenvalues at each pixel is costly, so we can compute a more efficient "cornerness" function that gives a result $C$ that is positive on a corner, negative on an edge an about 0 on a flat surface.
+
+The Harris corner detection algorithm can thus be summarized as follows:
+\begin{enumerate}
+  \item Compute $C$ at each pixel.
+  \item Select all pixels where $C$ is higher than a chosen positive threshold $T$.
+  \item Within the previous set, detect as corners only those pixels that are local maxima of $C$ (NMS).
+\end{enumerate}
+
+Eigenvalues of $M$ are invariant to a rotation of the image axes, and thus so is Harris cornerness function.
+It also invariant to additive intensity changes.
+However, it's not invariant to scale changes, as corner structures may degrade or transform into edges under significant scaling, nor to multiplicative intensity variations which scale gradients and alter the corner response magnitude unless thresholds are adaptively adjusted.
+
+\subsubsection{Scale-Space}
+Scale invariance is the main issue adressed by second generation local invariant features.
+The key idea is to apply a fixed-size detection tools on increasingly down-sampled and smoothed versions of the input image.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/scale_space.jpg}
+  \caption{We increase the blur as we reduce the image size}
+  \label{fig:scale_space}
+\end{figure}
+
+As we move along scales, small details should continuously disappear and no structure should be introduced.
+
+A Scale-Space is a one-parameter family of images created from the original one so that the structures at smaller scales are successively suppressed by smoothing operations.
+
+A Scale-Space must be realized by Gaussian Smoothing $L(x,y,\sigma) = G(x,y,\sigma) * I(x,y)$.
+A Scale-Space is created by repeatedly smoothing the original image with larger and larger Gaussian kernels.
+
+\paragraph{Feature Detection \& Scale Selection}
+The Gaussian Scale-Space is only a tool to represent the input image at different scales.
+It neither inclues any criterion to detect features nor to select their characteristic scale.
+As features do exist across a range of scales how do we establish at which scale a feature turns out maximally interesting and should therefore be described?
+
+The fundamental research work on multi-scale feature detection and automatic scale selection was proposed in "Feature detection with automatic scale selection" by T. Lidneberg in 1998.
+
+As we filter more by using a higher sigma, derivatives tends to become weaker.
+To compensate, Lindeberg proposed to multiply/normalize derivatives by sigma (doing scale-normalization).
+
+\paragraph{Scale-Normalized LoG}
+
+The scale-normalized Laplacian Of Gaussian (LoG) is: $F(x,y,\sigma) = \sigma^2\nabla^2 L(x,y,\sigma) = \sigma^2(\nabla^2 G(x,y,\sigma) * I(x,y))$, where $\sigma^2$ is the normalization factor.
+
+The scale-normalized LoG detects blobs (regions with intensity variations) by combining Gaussian Smoothing (which reduces noise and suppresses fine details) and Laplacian Operator (which highlights regions of rapid intensity change).
+
+Scale normalization is introduced since the raw LoG response diminishes as the scale ($\sigma$) increases, biasing detection toward smaller blobs.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/sunflower_blobs.jpg}
+  \caption{LoG filter locates blobs}
+  \label{fig:sunflower_blobs}
+\end{figure}
+
+\paragraph{Difference of Gaussian (DoG)}
+
+Lowe proposed to detect keypoints by seeking for the extrema of the DoG (Difference of Gaussian) function across the $(x,y,\sigma)$ domain.
+
+$$DoG(x,y,\sigma) = (G(x,y,k\sigma) - G(x,y,\sigma)) * I(x,y) = L(x,y,k\sigma) - L(x,y,\sigma)$$
+
+This approach provides a computationally efficient approximation of Lindeberg's scale-normalized LoG.
+
+$$G(x,y,k\sigma) - G(x,y,\sigma) \approx (k-1)\sigma^2\nabla^2 G(x,y,\sigma) * I(x,y)$$
+
+Both detectors are rotation invariant and find blob-like features.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/dog.jpg}
+  \caption{Lowe proves that this is a scaled version of Lindeberg}
+  \label{fig:dog}
+\end{figure}
+
+In the DoG we compute several Gaussian smoothed functions within an octave.
+For each pair we take the differences, then we seek for extrema in the DoG.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/dog_1.png}
+  \caption{Difference of Gaussian}
+  \label{fig:dog_1}
+\end{figure}
+
+\paragraph{Extrema detection}
+A point $(x,y,\sigma)$ is detected as a keypoint if and only if its DoG is higher (or lower) than that of the 26 neighbour (8 at the same scale and $18 =  9 + 9$ at the two nearby scales) in the $(x,y,\sigma)$ space.
+
+According to the original article the best number of sclaes within an octave is $s=3$, initial $\sigma$ for each octave should be $\sigma =1.6$ and the input image is enlarged by a factor of 2 in both dimensions.
+
+After detecting points as local extrema, the next step is to prune weak and unstable responses to ensure robustness.
+Keypoints with low contrast, corresponding to weak DoG responses, are often sensitive to noise and less repeatable across different images.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/dog_keypoints.jpg}
+  \caption{The size of the circle is proportional to the scale of the feature ($\sigma$)}
+  \label{fig:dog_keypoints}
+\end{figure}
+
+\subsubsection{Scale and Rotation Invariance Description}
+
+DoG are rotation invariant because of circular simmetry.
+Once each keypoint has been extracted, a surrounding patch is considered to compute its descriptor (scale and rotation invariant).
+
+We need to identify a prominent direction inherent to the patch (the canonical orientation) and, based on such direction, define a local reference frame.
+A reasonable choice consists in identifying the direction along which most of the gradient is found.
+
+To compute the canoncial orientation we need to define a scale and rotation invariant description.
+Once each keypoint has been extracted, a surrounding patch is considered to compute its descriptor (scale and rotation invariant).
+\begin{itemize}
+  \item Scale invariance: the patch is taken from the stack of images that correspond to the characteristic scale.
+  \item Rotation invariance: a canonical patch orientation is computed, so that the descriptor can then be computed on a canonically-oriented patch (orientation with respect to a new reference system, not the one of the image).
+\end{itemize}
+
+Lowe proposed to compute the canoncial orientation of DoG keypoints as follows: given the keypoint, the magnitude and orientation of the gradient are computed at each pixel of the associated Gaussian-smoothed image, L:
+
+\begin{itemize}
+  \item $m(x,y) = \sqrt{(L(x+1,y)-L(x-1,y))^2 + (L(x,y+1) - L(x,y-1))^2}$
+  \item $\theta(x,y) = \tan^{-1}\frac{L(x,y+1)-L(x,y-1)}{L(x+1,y)-L(x-1,y)}$
+\end{itemize}
+
+We can then compute an orientation histogram by accumulating the contributions of the pixels belongigng to a neighborhood of the keypoint location (a bin size of $10\deg$).
+The characteristic orientation of the keypoint is given by the highest peak of the orientation histogram.
+Other peaks higher than $80\%$ of the main one would be kept as well.
+A keypoint may have multiple canonical orientations and, in turn, multiple descriptors sharing the same location/scale with diverse orientations (this happen rarely, about on 15\% of the keypoints).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/ambiguous_keypoint.jpg}
+  \caption{This is an ambiguous keypoint, we have two prominent decisions}
+  \label{fig:ambiguous_keypoints}
+\end{figure}
+
+\subsubsection{SIFT Descriptor}
+
+The SIFT (Scale Invariant Feature Transform) descriptor is computed as follows:
+\begin{itemize}
+  \item $16\times 16$ oriented pixel grid around each keypoint is considered.
+  \item This is further divided into $4 \times 4$ regions (each of size $4\times4$ pixels).
+  \item A gradient orientation histogram is created for each region.
+  \item Each histogram has 8 bins.
+  \item Each pixel in the region contributes to its designated bin according to gradient magnitude and gaussian weighting function centered at the keypoint (with $\sigma$ equal to half the grid size).
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/sift_descriptor.jpg}
+  \caption{The descriptor size is given by the number of regions times the number of histogram bins per region}
+  \label{fig:sift_descriptor}
+\end{figure}
+
+\paragraph{Matching process}
+The descriptor is normalized to unit length to gain invariance with respect to affine intensity changes.
+Descriptors like SIFT are compared across diverse views of a scene to find corresponding keypoints.
+This is a classical Nearest Neighbour (NN) seach problem.
+Given a set $S$ of points, $p_i$, in a matric space $M$ and a query point $q \in M$, find the $p$, closest to $q$.
+We wish to match the local features computed from an image under analysis (target image $T$) to those already computed from a reference image ($R$) or a set of reference images.
+
+For each feature in $T$ we look for the most similar one in $R$:
+\begin{itemize}
+  \item The features in $T$ represent the query points, $q$.
+  \item The features in $R$ provide set $S$.
+  \item When matching SIFT descriptors the distance typically used is the Euclidean distance.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/matching_sift.jpg}
+  \caption{Image matching process with SIFT}
+  \label{fig:matching_sift}
+\end{figure}
+
+The found NN does not necessarily provide a valid correspondence as some features in $T$ may not have a corresponding feature in $R$.
+We enforce a criteria to accept/reject a match found by the NN search process.
+The simplest thing to do is to use a threshold.
+Lowe showed that $T=0.8$ may allow for rejecting $90\%$ of the wrong matches while missing only $5\%$ of those correct.
+
+Exhaustively searching for the $NN$ of the query feature, $q$, has linear complexity in the size of $S$.
+This is slow, so efficient indexing techniques are exploited to speed-up the NN-search process.
+The main indexing technique exploited for feature matching is known as k-d tree.
+
+
+
+
+
 
 \section{Advanced Topics in Deep Learning for Computer Vision}
 
