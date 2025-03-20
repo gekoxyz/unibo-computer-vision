@@ -13,7 +13,7 @@
 \DeclareMathOperator{\sinc}{sinc}
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
-
+\usepackage{cancel}
 \usepackage{amssymb}
 \usepackage{float}
 \usepackage{graphicx}
@@ -929,20 +929,311 @@ For each feature in $T$ we look for the most similar one in $R$:
   \label{fig:matching_sift}
 \end{figure}
 
-The found NN does not necessarily provide a valid correspondence as some features in $T$ may not have a corresponding feature in $R$.
+The found Nearest Neighbour (NN) does not necessarily provide a valid correspondence as some features in $T$ may not have a corresponding feature in $R$.
 We enforce a criteria to accept/reject a match found by the NN search process.
 The simplest thing to do is to use a threshold.
 Lowe showed that $T=0.8$ may allow for rejecting $90\%$ of the wrong matches while missing only $5\%$ of those correct.
 
-Exhaustively searching for the $NN$ of the query feature, $q$, has linear complexity in the size of $S$.
+Exhaustively searching for the NN of the query feature, $q$, has linear complexity in the size of $S$.
 This is slow, so efficient indexing techniques are exploited to speed-up the NN-search process.
 The main indexing technique exploited for feature matching is known as k-d tree.
 
+\subsection{Camera Calibration}
+
+Camera Calibration is important for taking quantitative measurements from images.
+In the \textbf{perspective projection} model, given a point in the 3D space $M = [x,y,z]^T$, with coordinates given in the Camera Reference Frame (CRF).
+Its projection onto the image plane I is denoted as $m=[u,v]^T$.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.5\linewidth]{./img/camera_calibration.jpg}
+  \caption{Perspective Projection Model (PPM)}
+  \label{fig:camera calibration}
+\end{figure}
+
+\subsubsection{Projective Space}
+
+The physical space is a 3D Euclidean Space ($\mathbb{R}^3$) whose points can be represented as 3D vectors in a given reference frame.
+In this space parallel lines do not intersect.
+Points at infinity cannot be represented in this vector space.
+
+The Projective Space is a mathematical engine to handle the geometry of image formations.
+In the Projective space we append one more coordinate to the Euclidean triplets.
+A point is represented by an equivalence class of quadruples, wherein equivalent quadruples differe just by a multiplicative factor.
+
+This is called \textbf{homogeneous coordinates} representation of the 3D point having Euclidean coordinates $(x,y,z)$.
+The space associated with the homogeneous coordinate's representation is called Projective Space, denoted as $P^3$
+\vspace{1em}
+We are interested in Projective Spaces because Perspective Projection is more conveniently dealt with using projective coordinates.
+\vspace{1em}
+The point at infinity is a point in the space, the vanishing point is a point into the image plane.
+Points at infinity of the 3D lines are the points of the 3D Projective Space \textbf{having the fourth coordinate equal to 0}.
+
+To map such points into the Euclidean Space we would divide by the fourth coordinate (which is 0) which is not a valid representation in the Euclidean Space.
+The point $(0,0,0,0)$ it's not the origin, but an undefined point. The origin is represented in homogeneous coordinates as $(0,0,0,k)$, with $k\neq 0$.
+
+Given a 3D point $\tilde{M} = [x,y,z]^T$ (with coordinates expressed in the Camera Reference Frame) and its 2D projection onto the image plane $\tilde{m} = [u,v]^T$.
+
+In homogeneous coordinates the perspective projection becomes a linear transformation.
+
+$$
+\begin{bmatrix}
+u \\ v \\ 1
+\end{bmatrix} =
+\begin{bmatrix}
+f & 0 & 0 & 0 \\
+0 & f & 0 & 0 \\
+0 & 0 & 1 & 0 
+\end{bmatrix}
+\begin{bmatrix}
+x \\ y \\ z \\ 1
+\end{bmatrix}
+$$
+
+Which in matrix notation is $\tilde{m} \approx \tilde{P}\tilde{M}$, where $\approx$ means "equal up to an arbitrary scale factor".
+\vspace{1em}
+$\tilde{P}$ represents the geometric camera model, and is known as \textbf{Perspective Projection Matrix (PPM)}.
+\vspace{1em}
+The operation carried out by the PPM is that of scaling lateral coordinates according to the distance from the camera $(z)$.
+The actual focal length just introduces an additional scaling factor of projected coordinates.
+
+The is just an abstraction, which is quite convenient but also useless, since there is no way to measure world coordinates in a reference frame which is basically an abstraction of a camera.
+
+\subsubsection{A more comprehensive camera model}
+
+To come up with a really useful camera model we need to take in account two additional issues:
+\begin{itemize}
+  \item Image digitization.
+  \item The 6 DOF rigid motion between the Camera Reference Frame (CRF) and the World Reference Frame (WRF).
+\end{itemize}
+
+Digitization can be accounted for by including into the projection equations the scaling factors along the two axis due to the quantization associated with the horizontal and vertical pixel size, this is because we have a discrete grid of pixels.
+
+We also need to model the translation of the piercing point (intersection between the optical axis and the image plane) with respect to the origin of the image coordinate system.
+This is needed to move the reference frame from the center of the CMOS in the camera to the top left corner, since we don't want to use negative coordinates.
+
+\subsubsection{Intrinsic Parameter Matrix}
+Now the Perspective Projection Matrix can be written as:
+$$
+\tilde{P} = 
+\begin{bmatrix}
+  fk_u & 0 & u_0 & 0 \\
+  0 & fk_v & v_0 & 0 \\
+  0 & 0 & 1 & 0 
+\end{bmatrix}
+=
+\begin{bmatrix}
+  fk_u & 0 & u_0 \\
+  0 & fk_v & v_0 \\
+  0 & 0 & 1 
+\end{bmatrix}
+\begin{bmatrix}
+  1 & 0 & 0 & 0 \\
+  0 & 1 & 0 & 0 \\
+  0 & 0 & 1 & 0 
+\end{bmatrix}
+= A[I|0]
+$$
+
+Matrix $A$, models the characteristics of the image sensing device and is called \textbf{Intrinstic Parameter Matrix}
+The smallest number of intrinsic parameters is thus 4.
+The intrinstic parameter matrix contains infromation about: focal length, pixel dimension and camera center.
+
+\subsubsection{Rigid motion between CRF and WRF}
+We need to apply a roto-translation to relate the World Reference Frame to the Camera Reference Frame.
+The relation between the coordinates of a point in the two reference frames is:
+
+$$
+W =
+\begin{bmatrix}
+X \\ Y \\ Z \\ 1
+\end{bmatrix}
+\,,
+M=
+\begin{bmatrix}
+x\\ y\\ z\\1
+\end{bmatrix}
+\Rightarrow
+M=
+\begin{bmatrix}
+R & T \\
+0 & 1
+\end{bmatrix}
+W = GW
+$$
+
+% TODO: REVISE AFTER NEW LESSON DROP
+To map a 3D point expressed in the Camera Reference Frame: $k\tilde{m} = A[I|0]\tilde{M}$
+
+The general from of the Perspective Projection Matrix can be expressed as follows:
+$\tilde{P} = A[I|0]G$ or also $\tilde{P}=A[R|T]$.
+
+\paragraph{Extrinsic Parameters}
+
+$G$ is called \textbf{Extrinsic Parameter Matrix} and it encodes the position and orientation of the camera with respect to the World Reference Frame.
+The rotation matrix has only 3 independent parameters, which correspond to the rotation angles around the axis of the reference frame.
+$T$ has 3 independent parameters
+The total number of \textbf{extrinsic parameters} is 6 (3 translation, 3 rotation).
+$A$ has 4 independent parameters.
+The general form of the Perspective Projection Matrix can be thought of as encoding:
+\begin{itemize}
+  \item the position of the camera with respect to the world into $G$.
+  \item the actual characteristics of the sensing device into $A$.
+\end{itemize}
+
+\subsubsection{P as a Homography}
+We just need the relation between the camera and the plane, then we can measure everything on that plane.
+
+If the camera is imaging a planar scene, we can assume the z-axis of the World Reference Frame to be perpendicular to the plane such that all 3D points will have their z-coordinate equal to 0.
+The Perspective Projection Matrix then becomes a simpler transformation defined by a $3x3$ matrix.
+$$k\tilde{m} = \tilde{P}\tilde{w}
+\begin{bmatrix}
+  p_{1,1} & p_{1,2} & \cancel{p_{1,3}} & p_{1,4} \\
+  p_{2,1} & p_{2,2} & \cancel{p_{2,3}} & p_{2,4} \\
+  p_{3,1} & p_{3,2} & \cancel{p_{3,3}} & p_{3,4} 
+\end{bmatrix}
+\begin{bmatrix}
+x \\ y \\ 0 \\ 1
+\end{bmatrix}
+=
+\begin{bmatrix}
+  p_{1,1} & p_{1,2} & p_{1,4} \\
+  p_{2,1} & p_{2,2} & p_{2,4} \\
+  p_{3,1} & p_{3,2} & p_{3,4} 
+\end{bmatrix}
+\begin{bmatrix}
+x \\ y \\ 1
+\end{bmatrix}
+= H\tilde{M}
+$$
+
+Such a transformation, denoted here as H, is known as \textbf{homography} and represents a general linear transformation between projective planes.
+A homography is then a projective transformation between two planes or a mapping between two planar projection of an image.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/homography.jpg}
+  \caption{Any two images of a planar scene are related by a homography}
+  \label{fig:homography}
+\end{figure}
+
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/rotating_homography.jpg}
+  \caption{Any two images taken by a camera rotating about the optical center are related by a homography}
+  \label{fig:rotating_homography}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/moving_homography.jpg}
+  \caption{Any two images taken by different cameras in fexed pose are related bu a homography}
+  \label{fig:moving_homography}
+\end{figure}
+
+\subsubsection{Lens distortion}
+
+The Perspective Projection Matrix is based on the pinhole camera model, however, real lenses introduce distortions with respect to the pure pinhole model.
+We also have lens distortion, which is modelled through additional parameters that don't alter the form of the Perspective Projection Matrix.
+
+We have two types of lens distortion: barrel distortion which bends straight lines outwards, and pincushion distortion, which causes straight lines to curve inward.
+
+\subsubsection{Calibration}
+
+We now have the Perspective Projection Matrix camera model, which can be decomposed in:
+\begin{itemize}
+  \item Intrinsic parameter matrix $A$.
+  \item Rotation matrix $R$.
+  \item Translation vector $T$.
+\end{itemize}
+
+\textbf{Camera calibration} is the process whereby \textbf{all parameters defining the camera model are estimated} for a specific camera device.
+Depending on the application, \textbf{either the Perspective Projection Matrix (PMM) only, or also its independent components} ($A$,$R$,$T$) need to be estimated.
+
+There are many camera calibration algorithms, but the basic process always relies on setting up a linear system of equations given a set of known 3D-2D correspondences.
+To obtain the correspondences we use calibration targets, which have easily detectable features.
+
+The approaches can be split into:
+\begin{itemize}
+  \item Those relying on a single image containing a known pattern.
+  \item Those relying on several different images of one given planar pattern.
+\end{itemize}
+
+\subsubsection{Zhang's method for Camera Calibration}
+
+Of the chessboard pattern we know the number of internal corners and the size of the squares.
+Internal corners can be easily detected by standard algorithms, like the Harris corner detector.
+Typically the camera is fixed and you move the calibration target in front of the camera.
+The $[R\,T]$ are estimated with respect to the reference system attached to the target, but it changes alongside with the pattern.
+In each image the 3D world reference frame is taken at the top-left corner of the pattern.
+Each image requires its own estimate of the extrinstic parameters, as they are different from one to the other.
+Due to the choice of the world reference frame associated with calibration images, in each of them we consider only 3D points with $z=0$.
+The Perspective Projection Matrix boils down to a simpler transformation defined by an homography $3\times 3$ matrix, like with $P$ as a homography.
+
+$$k\tilde{m} = \tilde{P}\tilde{w}
+\begin{bmatrix}
+  p_{1,1} & p_{1,2} & \cancel{p_{1,3}} & p_{1,4} \\
+  p_{2,1} & p_{2,2} & \cancel{p_{2,3}} & p_{2,4} \\
+  p_{3,1} & p_{3,2} & \cancel{p_{3,3}} & p_{3,4} 
+\end{bmatrix}
+\begin{bmatrix}
+x \\ y \\ \cancel{0} \\ 1
+\end{bmatrix}
+=
+\begin{bmatrix}
+  p_{1,1} & p_{1,2} & p_{1,4} \\
+  p_{2,1} & p_{2,2} & p_{2,4} \\
+  p_{3,1} & p_{3,2} & p_{3,4} 
+\end{bmatrix}
+\begin{bmatrix}
+x \\ y \\ 1
+\end{bmatrix}
+= H\tilde{M}
+$$
+
+Given a pattern with $m$ corners, we can write $m$ systems of 3 linear equations, where:
+\begin{itemize}
+  \item Both 3D as well as 2D coordinates are known due to the corners having been detected in the i-th image and the unknowns are thus the 9 elements in $H_i$.
+  \item $H_i$ (and $P_i$ alike) is known up to an arbitrary scale factor, the independent elements in $H_i$ are 8.
+\end{itemize}
+
+\textbf{There are plenty of methods for the estimation}
+
+The Zhang's method can be summarized as:
+\begin{enumerate}
+  \item Acquire $n$ images of a planar pattern with $m$ internal corners.
+  \item For each image compute an initial guess for homography $H_i$.
+  \item Refine eaech $H_i$ by minimizing the reprojection error.
+  \item Get an initial guess for $A$ given the homographies $H_i$.
+  \item Given $A$ and $H_i$, get an initial guess for $R_i$ and $T_i$.
+  \item Compute an initial guess for lens distortion parameters $k$.
+  \item Refine all parameters $A$, $R_i$, $T_i$, $k$ by minimizing the reprojection error.
+\end{enumerate}
+
+\subsubsection{Image warping}
+
+% TODO: WRITE AFTER LESSON DROP (SLIDE 38/65)
+
+After applying the warping function you get real coordinates not discrete ones.
+During the mapping, some pixels of the destination image may be not rounded perfectly.
+What if more pixels go to the same position?
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/forward_mapping.jpg}
+  \caption{A better choice consists in mapping to the closest point into the destination image}
+  \label{fig:forward_mapping}
+\end{figure}
+
+Since the coordinates are always real values the different mapping strategies can be to map the closest point or to interpolate between the 4 closest points.
 
 
 
 
 
+
+
+\vspace{3em}
 \section{Advanced Topics in Deep Learning for Computer Vision}
 
 \end{document}
