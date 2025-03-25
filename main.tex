@@ -92,16 +92,15 @@ Geometrically, the image is achieved by drawing straight rays from scene points 
 This simple geometrical model turns out to be a good approximation of the geometry of image formation.
 However, useful images can hardly be captured by means of a pinhole camera.
 
-The geometric model of image formation in a pinhole camera is known as \textbf{perspective projection}.
+The \textbf{geometric model of image formation} in a pinhole camera is known as \textbf{perspective projection}.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\linewidth]{./img/perspective_projection.jpg}
   \caption{perspective projection}
-  % \label{}
 \end{figure}
 
-Which, by writing the poitns as vectors and the plane's coordinates becomes:
+Which, by writing the poitns as vectors and the plane's coordinates, becomes the geometric model in the image \ref{fig:perspective_projection_axis}
 
 \begin{figure}[htbp]
   \centering
@@ -110,7 +109,7 @@ Which, by writing the poitns as vectors and the plane's coordinates becomes:
   \label{fig:perspective_projection_axis}
 \end{figure}
 
-Given the reference frame in \ref{fig:perspective_projection_axis} 
+Given the reference frame in the image \ref{fig:perspective_projection_axis} 
 \begin{itemize}
   \item $u$ is the horizontal axis in the image plane.
   \item $v$ is the vertical axis in the image plane.
@@ -126,18 +125,17 @@ $$\frac{u}{x} = -\frac{f}{z} \rightarrow u = -x\frac{f}{z} \quad\quad\quad \frac
 The minus sign means the axis gets inverted (as we can see in the visualization, and it's what happens in the brain).
 We can get rid of the sign, since the image plane can be though of as lying in front rather than behind the optical centre.
 
-Image coordinates are a scaled version of scene coordinates (function of depth), this means that if the distance becomes bigger the object gets smaller.
-When z increases, since it's at the denominator in both the equations the terms gets smaller (object gets smaller).
-\textbf{The larger the focal length the bigger the object is in the image (and viceversa)}.
+Image coordinates are a scaled version of scene coordinates (function of depth).
+When $z$ increases, since it's at the denominator in both the equations, the terms gets smaller (object gets smaller in the image).
+When $f$ increases, since it's at the numerator in both the equations the term gets bigger (object gets bigger in the image)
 
-As we previously said, the image formation process deals with mapping a 3D space onto a 2D space, and so to a loss of information.
+As we previously said, the image formation process deals with mapping a 3D space onto a 2D space, and so to the loss of depth information.
 A given scene point is mapped into an image point, but an image point is mapped onto a 3D line.
-For an image point we can only state that its corresponding scene point lays on al ine but cannot disambiguate a specific 3D point along such a line.
+For an image point we can only state that its corresponding scene point lays on a line, but cannot disambiguate a specific 3D point along the line.
 
 \subsubsection{Stereo images}
 
-The solution is to use multiple images (at least two) to create stereo vision.
-The human visual system is a stereo vision system.
+We use multiple images to create stereo vision.
 Given correspondences, 3D information can be recovered easily by triangulation.
 We can use two cameras, or two cameras and an infrared sensor to project guides to align the images.
 
@@ -147,9 +145,9 @@ For standard stereo geometry there are some assumptions we have to make:
   \item The image planes of both cameras are coplanar and aligned.
   \item Both cameras have identical focal lengths.
 \end{itemize}
-
+\vspace{1em}
 Based on this, the transformation between the two reference frames is just a translation, usually horizontal.
-For stereo vision is also really important to \textbf{sense two images at the very same moment}.
+For stereo vision is also really important to \textbf{sense two images at the same moment}.
 
 The cameras are displaced at a given quantity $b$ called baseline.
 The \textbf{disparity} is the difference between the horizontal coordinates in the left and right images.
@@ -161,17 +159,17 @@ The \textbf{disparity} is the difference between the horizontal coordinates in t
   \label{fig:standard_stereo_geometry}
 \end{figure}
 
-The fundamental relationship in stereo vision is $z = b \cdot \frac{f}{d}$.
-It's used to calculate the depth of a point in a scene from a pair of stereo images.
+% The fundamental relationship in stereo vision is $z = b \cdot \frac{f}{d}$.
+% It's used to calculate the depth of a point in a scene from a pair of stereo images.
 
 In standard stereo geometry since we are given just two 2D images there is no info about the correspondence between two points in the two images.
-We can recall that the camera have parallel axes, and so we know that we can search for the correspondence alogn the horizontal lines.
+We can recall that the camera have parallel axes, and so we know that we can search for the correspondence along the horizontal lines.
 This task is called stereo matching.
 
 \subsubsection{Stereo correspondence}
-Given a point in one image find it in the other image which is the projection of the same 3D point.
+In stereo correspondence, given a point in one image, we have to find it in the other image which is the projection of the same 3D point.
 Such image points are called corresponding points.
-\textbf{Points farther away have a smaller disparity, while close poitns have a larger display}
+\textbf{Points farther away have a smaller disparity, while close points have a larger display}.
 
 \begin{figure}[htbp]
   \centering
@@ -208,7 +206,7 @@ The issue is that this projection can be computed only if the transformation bet
 It is almost impossible to build a stereo rig which is perfectly aligned horizontally.
 Searching through oblique epipolar lines is awkward, and computationally is less efficient.
 What people do in practice is to convert epipolar geometry to standard geometry with rectification/warping.
-We warp the images as if they were acquired through a standard geometry, then we can compute and applyto both images a transformation known as rectification.
+We warp the images as if they were acquired through a standard geometry, then we can compute and apply to both images a transformation known as rectification.
 
 \subsubsection{Depth of Field (DOF)}
 
@@ -218,14 +216,13 @@ In a pinhole device this happens to all scene points because of the very small s
 The drawback is that such a small aperture allows gathering a very limited amount of light.
 The image is really sharp, but has a really low light.
 If a point is projected onto a circle instead of a point (bigger pinhole) the image is not sharp (not on focus).
-If we cannot gather through aperture we have to integrate through time, by using a longer exposure time.
+If we cannot gather enough light through the aperture we have to integrate through time, by using a longer exposure time.
 
 \subsubsection{Lenses}
 
 Lenses concentrate light, so we use them to gather more light from a scene point and focus it on a single image point.
 This enables much smaller exposure times.
-This way Depth Of Field is no longer infinite, and only points across a limited range of distances can be simultaneously on focus in a given image.
-
+This way Depth Of Field is no longer infinite, and only a limited range of points can be simultaneously on focus in a given image.
 
 We will consider the approximate model known as thin lens equation, which is useful to graphically determine the position of a focused image point:
 \begin{itemize}
@@ -247,15 +244,25 @@ We will consider the approximate model known as thin lens equation, which is use
 \end{figure}
 
 Choosing the distance of the image plane determines the distance at which scene points appear on focus in the image.
-Scene points in front and behind the focusing plane will result out-of-focus, thereby appearing in the image as circles, known as circles of confusion, or \textbf{blur circles}, rather than points.
+Scene points in front and behind the focusing plane will result out-of-focus, thereby appearing in the image as \textbf{blur circles}, rather than points.
 
 The advantage of lenses is to have a small exposure time for capturing moving objects but we pay in terms of Depth Of Field.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/lens_focus.jpg}
+  \includegraphics[width=0.8\linewidth]{./img/lens_focus.jpg}
   \caption{Lens focusing at various distances}
   \label{fig:lens_focus}
+\end{figure}
+
+As we can see in \ref{fig:tradeoffs} having a small aperture (pinhole camera model) results in everything being on focus, but we need lots of light, or the image will be dark, since few light can enter in the sensor.
+We could also increase our exposure time to let more light in, but in that case we need the objects in our image to be still.
+Having a bigger aperture results in more light coming in in a small time fraction, but the lens distortion causes the light to be focused only at certain distances, and creates blur cirlces in other zones, so we get a lower depth of field, as we can see in \ref{fig:lens_focus}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/tradeoffs.jpg}
+  \label{fig:tradeoffs}
 \end{figure}
 
 \subsubsection{Diaphragm}
@@ -270,16 +277,16 @@ However, as long as the circles are smaller than the size of the photosensing el
   \label{fig:diaphragm}
 \end{figure}
 
-The range of distances across which the image appears on focus, due to blur circles being small enough, determines the Depth Of Field) of the imaging apparatus.
+The range of distances across which the image appears on focus, due to blur circles being small enough, determines the (Depth Of Field) of the imaging apparatus.
 Cameras often deploy an adjustable diaphragm (iris) to control the amount of light gathered through the effective aperture of the lens.
 \begin{itemize}
   \item Reduce aperture $\rightarrow$ less light $\rightarrow$ smaller blur circle
   \item More aperture $\rightarrow$ more light $\rightarrow$ larger blur circle.
-  \item Close the diaphragm $\rightarrow$ increase depth of field $\rightarrow$ not enough light $\rightarrow$ increase exposure time $\rightarrow$ moving object $\rightarrow$ motion blur $\rightarrow$ still scenes.
+  \item Close the diaphragm $\rightarrow$ increase depth of field $\rightarrow$ not enough light $\rightarrow$ increase exposure time $\rightarrow$ moving object $\rightarrow$ motion blur.
 \end{itemize}
 
 \subsubsection{Focusing mechanism (manually changing depth of field)}
-To focus on objects at diverse distances we need a amechanism that allows the lens (or the lens subsystem) to translate along the optical axis with respect to the fixed position of the image plane.
+To focus on objects at diverse distances we need a mechanism that allows the lens (or the lens subsystem) to translate along the optical axis with respect to the fixed position of the image plane.
 
 \begin{figure}[htbp]
   \centering
@@ -304,12 +311,12 @@ The process can be divided in two steps: sampling and quanitzation.
 \end{figure}
 
 \begin{itemize}
-  \item \textbf{Sampling}: the planar continuous image is sampled along both the horizontal and vertical directions to pick up a matrix of $n\times m$ samples known as pixels.
+  \item \textbf{Sampling}: the planar continuous image is sampled along both the horizontal and vertical directions to pick up a matrix of $N\times M$ samples (pixels).
   \item \textbf{Quantization}: the continuous range of values associated with pixels is quantized into $l=2^m$ discrete levels known as gray-levels.
   $m$ is the number of bits used to represent a pixel, with the memory occupancy (in bits) of a gray-scale image given by $B = N \times M \times m$. Coloured digital images are typically represented within computers using 3 bytes per pixels. Both more pixels and more bits per pixel result in a higher quality image.
 \end{itemize}
 
-The more bits we spend for its representation, the higher the quality of the digital image (becomes a closer approximation to the ideal continuous image).
+The more bits we spend for its representation, the higher the quality of the digital image (it becomes a closer approximation to the ideal continuous image).
 This applies both to sampling and quantization.
 
 \subsubsection{Camera sensors}
@@ -321,8 +328,8 @@ For digital cameras the sensor includes the necessary ADC circuitry.
 
 Today, the two main sensor technologies are:
 \begin{itemize}
-  \item Charge Coupled Devices (CCD), where the sensor and circuit are separated.
-  \item CMOS (Complementary Metal Oxide Semiconductor), where everything is on the same circuit.
+  \item \textbf{Charge Coupled Devices (CCD)}, where the sensor and circuit are separated.
+  \item \textbf{ Complementary Metal Oxide Semiconductor (CMOS)}, where everything is on the same circuit.
 \end{itemize}
 
 CCD/CMOS sensors can't sense colors, so we place an array of optical filters in front of the photodetectors, to render each pixel sensitive to a specific range of wavelengths.
@@ -335,7 +342,7 @@ The main noise sources are:
   \item \textbf{Photon Shot Noise}: the number of photons collected during exposure time is not constant.
   \item \textbf{Electronic Circuitry Noise}: generated by the electronics.
   \item \textbf{Quantization Noise}: related to the ADC conversion.
-  \item \textbf{Dark Current Noise}: random charge observed due to thermal excitement.
+  \item \textbf{Thermal Noise (Dark Current Noise)}: random charge observed due to thermal excitement.
 \end{itemize}
 
 SNR can be expressed both in decibels and bits.
@@ -346,7 +353,7 @@ Given $E_{\text{min}}$: the minimum detectable irradiation, and $E_{\text{max}}$
 The Dynamic Range (DR) of a sensor is defined as $DR = \frac{E_{\text{max}}}{E_{\text{min}}}$, and like the SNR, it is often specified in decibels or bits.
 
 Like SNR, the higher the DR the better it is.
-A higher DR corresponds to the ability of the sensor to simultaneously capture in one image both the dark and bright structures of the scene.
+A \textbf{higher DR} corresponds to the ability of the sensor to simultaneously \textbf{capture in one image both the dark and bright} structures of the scene.
 
 % lecture 2 part 2
 \subsection{Image Filtering}
@@ -354,7 +361,7 @@ A higher DR corresponds to the ability of the sensor to simultaneously capture i
 \subsubsection{Noise and image filters}
 
 In computer vision we have to deal with noise.
-Noise is always different and more noticeable in uniform regions of the image.
+Noise is always different, and more noticeable in uniform regions of the image.
 The simplest thing to reduce noise is to output the average of the pixel color over time, to get \textbf{almost} the ideal noiseless value.
 $$O(p) = \frac{1}{T} \sum_{t=1}^{T} I_k(p) = \frac{1}{T} \sum_{t=1}^{T}(\tilde{I}(p) + n_t(p))$$
 
@@ -378,23 +385,23 @@ Image filters are image processing operators that compute the new intensity (col
 
 An important sub-class of filters is given by \textbf{Linear} and \textbf{Translation-Equivariant (LTE)} operators.
 
-The application of filters in image processing consists in a 2D convolution between the input image and the impulse response function of the LTE operator.
+The \textbf{application of filters} in image processing consists in a \textbf{2D convolution} between the input image and the impulse response function of the LTE operator.
 
 LTE operators are used as feature extractors in Convolutional Neural Networks (CNNs).
 
 Given an input 2D signal $i(x,y)$, a 2D operator $T{i(x,y)}$ is said to be linear if and only if
-$$ T{\alpha i_1(x,y) + \beta i_2(x,y)} = \alpha o_1(x,y) + \beta o_2(x,y) $$ with $o_1 = T{i_1}$ and $o_2 = T{i_2}$ and $\alpha, \beta$ are two constants.
-The operator is said to be \textbf{translation-equivariant} if and only if: $T{i(x-x_0, y-y_0)} = o(x-x_0, y-y_0)$
+$$ T\{\alpha i_1(x,y) + \beta i_2(x,y)\} = \alpha o_1(x,y) + \beta o_2(x,y) $$ with $o_1 = T{i_1}$ and $o_2 = T{i_2}$ and $\alpha, \beta$ are two constants.
+The operator is said to be \textbf{translation-equivariant} if and only if: $T\{i(x-x_0, y-y_0)\} = o(x-x_0, y-y_0)$
 
 If the operator is LTE, the output signal is given by the \textbf{convolution} between the input signal and the impulse response (point spread function) $h(x,y) = T{\delta (x,y)}$.
 
-$$o(x,y) = i(x,y) * h(x,y) = T{i(x,y)}$$
+$$o(x,y) = i(x,y) * h(x,y) = T\{i(x,y)\}$$
 
 $$i(x,y) * h(x,y) = \int_{-\infty}^{\infty} \int_{-\infty}^{\infty} i(\alpha, \beta) h(x-\alpha, y-\beta) \, d\alpha  d\beta $$
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/graphical_convolution.jpg}
+  \includegraphics[width=0.6\linewidth]{./img/graphical_convolution.jpg}
   \caption{A graphical view of convolution}
   \label{fig:graphical_convolution}
 \end{figure}
@@ -440,17 +447,16 @@ Without padding convolutions shrink the images.
 
 \subsubsection{Mean filter}
 
-Mean filtering is the simplest and fastest way to denoise an image.
+\textbf{Mean filtering} is the \textbf{simplest and fastest way to denoise an image}.
 It consists in replacing each pixel intensity by the average intensity overa chosen neighbourhood.
-According to signal processing theory, the Mean Filter carries out a low-pass filtering operation, which in image processing is also referred to as image smoothing.
+According to signal processing theory, \textbf{the Mean Filter carries out a low-pass filtering operation}, which in image processing is \textbf{also referred to as image smoothing}.
 Smoothing is often aimed at image denoising, but sometimes is used to cancel out small-size unwanted details that might hinder the image analysis task.
-Linear filtering reduces noise but blurs the image, so we lose sharpness.
+Linear filtering \textbf{reduces noise but blurs the image}, so we lose sharpness.
 
 % lecture 3
 \subsubsection{Gaussian filter}
 
-Let's try to use a more sophisticated but still linear filter.
-The gaussian filter is an LTE operator whose impulse response is a 2D Gaussian function 
+The Gaussian filter is an LTE operator whose impulse response is a 2D Gaussian function.
 
 \begin{figure}[htbp]
   \centering
@@ -459,27 +465,27 @@ The gaussian filter is an LTE operator whose impulse response is a 2D Gaussian f
   \label{fig:gaussian_filter}
 \end{figure}
 
-The larger the size of the gaussian kernel, the more accurate will the discrete approximation be, but the computational cost grows with the filter size.
+The larger the size of the gaussian kernel, the more accurate the approximation will be, but the computational cost grows with the filter size.
 We should then use larger sizes for filters with higher $\sigma$, smaller sizes whenever $\sigma$ is smaller.
-A typical rule is to choose the size of the filter by capturing the interval $[-3\sigma, +3\sigma]$ since it captures 99\% of the energy of the gaussian impulse.
-The Gaussian filter is the only one which has been mathematically proven of not altering image information but just semplification.
+A typical rule is to choose the size of the filter by capturing the interval $[-3\sigma, +3\sigma]$ since it captures 99\% of the energy of the Gaussian impulse.
+% The Gaussian filter is the only one which has been mathematically proven of not altering image information but just semplification.
 To speedup the filtering we can apply the 2D gaussian by doing 2 1D gaussian filterings.
 
 We also observe that the higher the $\sigma$, the higher is the smoothing caused by the filter.
-We can use this to remove details from the image.
+We can use this filter to remove details from the image.
 
 \subsubsection{Median filter}
 
 There is noise that Gaussian filters can't handle well, that is the salt and pepper noise. It's usually caused by image corruption (or broken pixels in the sensor).
 Linear filtering is ineffective and just blurs the image.
 
-We can use a \textbf{non-linear} filter, where each pixel intensity is replaced by the median over a given neighbourhood.
-Median filtering counteracts impulse noise effectively, since outliers tend to fall at either the top or the bottom end of the sorted intensities.
+We can use a \textbf{non-linear filter}, where each pixel intensity is replaced by the \textbf{median over a given neighbourhood}.
+Median filtering counteracts impulse noise effectively, since \textbf{outliers tend to fall at either the top or the bottom end of the sorted intensities}.
 Median filtering tends to keep sharper edges than linear filters such as the Mean or the Gaussian.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/median_filter_application.jpg}
+  \includegraphics[width=0.9\linewidth]{./img/median_filter_application.jpg}
   \caption{Example of the power of the median filter}
   \label{fig:median_filter_application}
 \end{figure}
@@ -489,7 +495,7 @@ The median filter can effectively denoise the image without introducing signific
 \subsubsection{Bilateral filter}
 
 The bilateral filter preserves edges while filtering out noise.
-It's an advanced non-linear filter to accomplish denoising of Gaussian-like noise without blurring the image.
+It's an advanced non-linear filter to accomplish \textbf{denoising of Gaussian-like noise without blurring the image}.
 It's also called edge preserving smoothing.
 
 $$O(p) = \sum_{q\in S} H(p,q) \cdot I_q \,\,\,\,\,\,\,\, H(p,q) = \frac{1}{W(p)} G_{\sigma_s}(d_s(p,q))G_{\sigma_r}(d_r(p,q))$$
@@ -502,7 +508,7 @@ $$O(p) = \sum_{q\in S} H(p,q) \cdot I_q \,\,\,\,\,\,\,\, H(p,q) = \frac{1}{W(p)}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/bilateral_filter_application.jpg}
+  \includegraphics[width=0.5\linewidth]{./img/bilateral_filter_application.jpg}
   \caption{Application of the bilateral filter}
   \label{fig:bilateral_filter_application}
 \end{figure}
@@ -513,7 +519,7 @@ At a pixel nearby an edge, the neighbourhood falling on the oter side of the edg
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/bilateral_filter.jpg}
+  \includegraphics[width=0.9\linewidth]{./img/bilateral_filter.jpg}
   \caption{Bilateral filter differences}
   \label{fig:bilateral_filter}
 \end{figure}
@@ -549,8 +555,9 @@ The simplest edge-detection operator relies on thresholding the absolute value o
 
 \paragraph{2D step-edge}
 A 2D step-edge is characterized not only by its strength but also by its direction (diagonal edge).
-The operator which allows us to sense the edge in any direction is the gradient: $\nabla I(x,y) = \frac{\partial I(x,y)}{\partial x}i + \frac{\partial I(x,y)}{\partial y}j$.
-Gradient's direction gives the direction along which the function exhibits its maximum variation.
+The operator which allows us to sense the edge in any direction is the gradient:
+$$\nabla I(x,y) = \frac{\partial I(x,y)}{\partial x}i + \frac{\partial I(x,y)}{\partial y}j$$
+The \textbf{gradient tells the direction along which the function exhibits its maximum variation}.
 We can use differences to approximate the gradient (since we are in the discrete world and we talk about pixels, not functions).
 We can estimate the magnitude of the gradient by using different approximations.
 We choose $|\nabla I|_{\max}=\max(|I_x|, |I_y|)$, since it's fast and invariant with respect to the edge direction.
@@ -566,7 +573,7 @@ Smoothing has the side effect of blurring true edges, making it more difficult t
 % This is done to average around the point because if we are on an edge around us there is a big transition.
 % Likewise, the central pixel can be weighted more (the center pixel should be more important).
 Prewitt and Sobel address the challenge of detecting edges in noisy environments by combining smoothing and differentiation into a single step.
-The Prewitt and Sobel operators perform spatial filtering by using $3x3$ convolution kernels.
+The Prewitt and Sobel operators perform spatial filtering by using $3 \times 3$ convolution kernels.
 Each kernel smooths the image in one direction (reducing noise) and computes the derivative in the perpendicular region (highlighting edges).
 Both operators use two kernels: one detects vertical edges, and one horizontal ones.
 After convolving the image with both kernels, the gradient magnitude and direction are computed.
@@ -579,7 +586,7 @@ Sobel is preferable in noisy images but may slightly blur edges.
 
 \subsubsection{Non-Maxima Suppression (NMS)}
 
-Detecting edges by gradient thresholding is inherently inaccurate, since it's difficult to choose the right threshold a priori.
+Detecting edges by gradient thresholding is inherently inaccurate, since \textbf{it's difficult to choose the right threshold} a priori.
 A better approach to detect edges may consist in finding the local maxima of the absolute value of the derivative of the signal.
 
 When dealing with 2D images, we should look for:
@@ -645,9 +652,9 @@ Yet, the former differential operator is much faster to compute.
 A robust edge detector should include a smoothing step to filter out noise.
 Edge detection by using the Laplacian of Gaussian (LoG) can be summarized as follows:
 \begin{itemize}
-  \item Gaussian smoothing: $\tilde{I}(x,y) = I(x,y) * G(x,y)$.
-  \item Second order differentiation by the Laplacian.
-  \item Extraction of the zero-crossing of $\nabla^2 \tilde{I}(x,y)$
+  \item \textbf{Gaussian smoothing}: $\tilde{I}(x,y) = I(x,y) * G(x,y)$.
+  \item \textbf{Second order differentiation} by the Laplacian.
+  \item Extraction of the \textbf{zero-crossing} of $\nabla^2 \tilde{I}(x,y)$
 \end{itemize}
 
 Practical implementations of the LoG may deploy the properties of convolutions to speed-up the computation.
@@ -660,7 +667,7 @@ Once a sign change is found, the actual edge may be localized:
   \item At the pixel where the \textbf{absolute} value of the LoG is smaller (it's the best choice, since the edge turns out closer to the true zero-crossing).
 \end{itemize}
 
-Using a higher $\sigma$ yields less details, so usually we use it for noisy images.
+Using a \textbf{higher $\sigma$ yields less details}, so usually we use it for noisy images.
 
 \begin{figure}[htbp]
   \centering
@@ -670,11 +677,8 @@ Using a higher $\sigma$ yields less details, so usually we use it for noisy imag
 \end{figure}
 
 
-\subsection{Feature detection}
-We can create a larger image by aligning two images of the same scene.
-Aligning two images may be done with a homography, which requires at least 4 feature correspondences.
-Feature detection is also useful for object detection, since we can look for features in the source image and try to find them again in the target image.
-
+\subsection{Feature detection and matching}
+Feature detection is useful for object detection, since we can look for features in the source image and try to find them again in the target image.
 Several computer vision tasks deal with finding "Corresponding Points" between two (or more) images of a scene.
 Correspondences are image points which are the projection of the same 3D point in different views of the scene.
 Establishing correspondences may be difficult, as the points may look different in different views.
@@ -683,7 +687,7 @@ Establishing correspondences may be difficult, as the points may look different 
 The task of establishing correspondences is split into 3 successive steps:
 \begin{itemize}
   \item \textbf{Detection} of salient points.
-  \item \textbf{Description}: computation of a suitable descriptor based on pixels in the keypoint neighbourhood.
+  \item Computation of a \textbf{suitable descriptor} based on pixels in the keypoint neighbourhood.
   \item \textbf{Matching} descriptors between images.
 \end{itemize}
 
@@ -692,12 +696,12 @@ Ideally we want scale/rotation/illumination invariance.
 
 \subsubsection{Properties of good detectors/descriptors}
 \begin{itemize}
-  \item Detector
+  \item Detector:
   \begin{itemize}
     \item Repeatability: it should find the same keypoints in different views of the scene despite the transformations.
     \item Saliency: it should find keypoints surrounded by informative patterns.
   \end{itemize}
-  \item Descriptor
+  \item Descriptor:
   \begin{itemize}
     \item Distinctiveness vs. robustness trade-off: the algorithm should capture the salient information around a keypoint.
     \item Compactness: the description should be as concise as possible.
@@ -710,11 +714,12 @@ Edge pixels can be hardly told apart as they look very similar along the directi
 Edges are locally ambiguous, since there are many other points that look just the same.
 
 \subsubsection{Moravec Interest Point Detector}
-We can define the \textbf{cornerness} at a point $p$, which is given by the minimum squared difference between the patch centered at $p$ and those centered at its 8 neighbours: $C(p) = \min_{q \in n_8(p)} ||N(p) - N(q)||^2$.
+We can define the \textbf{cornerness} at a point $p$, which is given by the minimum squared difference between the patch centered at $p$ and those centered at its 8 neighbours: 
+$$C(p) = \min_{q \in n_8(p)} ||N(p) - N(q)||^2$$
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/cornerness.jpg}
+  \includegraphics[width=0.9\linewidth]{./img/cornerness.jpg}
   \caption{Cornerness of an image segment}
   \label{fig:cornerness}
 \end{figure}
@@ -733,10 +738,10 @@ Due to the shift being infinitesimal, we can deploy Taylor's expansion of the in
 $M$ encodes the local image structure around the considered pixel.
 We hypothesize that $M$ is a diagonal matrix
 $M =
-\begin{matrix}
+\begin{bmatrix}
 \sum_{x,y} w(x,y) I_x(x,y)^2 & \sum_{x,y} w(x,y) I_x(x,y) I_y(x,y) \\
 \sum_{x,y} w(x,y) I_y(x,y) I_x(x,y) & \sum_{x,y} w(x,y) I_y(x,y)^2
-\end{matrix}
+\end{bmatrix}
 =
 \begin{bmatrix}
 \lambda_1 & 0 \\
@@ -745,7 +750,7 @@ $M =
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/harris_corner_detector.jpg}
+  \includegraphics[width=0.9\linewidth]{./img/harris_corner_detector.jpg}
   \caption{Harris corner detector and lambda values}
   \label{fig:harris_corner_detector}
 \end{figure}
@@ -758,7 +763,7 @@ $R^T$ is the rotation matrix that aligns the image axes to the eigenvectors of M
 
 Computing eigenvalues at each pixel is costly, so we can compute a more efficient "cornerness" function that gives a result $C$ that is positive on a corner, negative on an edge an about 0 on a flat surface.
 
-The Harris corner detection algorithm can thus be summarized as follows:
+The \textbf{Harris corner detection algorithm} can thus be summarized as follows:
 \begin{enumerate}
   \item Compute $C$ at each pixel.
   \item Select all pixels where $C$ is higher than a chosen positive threshold $T$.
@@ -775,33 +780,34 @@ The key idea is to apply a fixed-size detection tools on increasingly down-sampl
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/scale_space.jpg}
+  \includegraphics[width=0.9\linewidth]{./img/scale_space.jpg}
   \caption{We increase the blur as we reduce the image size}
   \label{fig:scale_space}
 \end{figure}
 
 As we move along scales, small details should continuously disappear and no structure should be introduced.
 
-A Scale-Space is a one-parameter family of images created from the original one so that the structures at smaller scales are successively suppressed by smoothing operations.
+A Scale-Space is a \textbf{one-parameter family of images} created from the original one so that the structures at smaller scales are successively suppressed by smoothing operations.
 
-A Scale-Space must be realized by Gaussian Smoothing $L(x,y,\sigma) = G(x,y,\sigma) * I(x,y)$.
+A Scale-Space must be realized by Gaussian Smoothing: $L(x,y,\sigma) = G(x,y,\sigma) * I(x,y)$.
 A Scale-Space is created by repeatedly smoothing the original image with larger and larger Gaussian kernels.
 
 \paragraph{Feature Detection \& Scale Selection}
-The Gaussian Scale-Space is only a tool to represent the input image at different scales.
-It neither inclues any criterion to detect features nor to select their characteristic scale.
-As features do exist across a range of scales how do we establish at which scale a feature turns out maximally interesting and should therefore be described?
+% The Gaussian Scale-Space is only a tool to represent the input image at different scales.
+% It neither inclues any criterion to detect features nor to select their characteristic scale.
+As features exist across a range of scales how do we establish at which scale a feature turns out maximally interesting and should therefore be described?
 
-The fundamental research work on multi-scale feature detection and automatic scale selection was proposed in "Feature detection with automatic scale selection" by T. Lidneberg in 1998.
+% The fundamental research work on multi-scale feature detection and automatic scale selection was proposed in "Feature detection with automatic scale selection" by T. Lidneberg in 1998.
 
 As we filter more by using a higher sigma, derivatives tends to become weaker.
 To compensate, Lindeberg proposed to multiply/normalize derivatives by sigma (doing scale-normalization).
 
 \paragraph{Scale-Normalized LoG}
 
-The scale-normalized Laplacian Of Gaussian (LoG) is: $F(x,y,\sigma) = \sigma^2\nabla^2 L(x,y,\sigma) = \sigma^2(\nabla^2 G(x,y,\sigma) * I(x,y))$, where $\sigma^2$ is the normalization factor.
+The scale-normalized Laplacian Of Gaussian (LoG) is: 
+$$F(x,y,\sigma) = \sigma^2\nabla^2 L(x,y,\sigma) = \sigma^2(\nabla^2 G(x,y,\sigma) * I(x,y))$$ where $\sigma^2$ is the normalization factor.
 
-The scale-normalized LoG detects blobs (regions with intensity variations) by combining Gaussian Smoothing (which reduces noise and suppresses fine details) and Laplacian Operator (which highlights regions of rapid intensity change).
+The \textbf{scale-normalized LoG detects blobs} (regions with intensity variations) by combining Gaussian Smoothing (which reduces noise and suppresses fine details) and Laplacian Operator (which highlights regions of rapid intensity change).
 
 Scale normalization is introduced since the raw LoG response diminishes as the scale ($\sigma$) increases, biasing detection toward smaller blobs.
 
@@ -826,7 +832,7 @@ Both detectors are rotation invariant and find blob-like features.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/dog.jpg}
+  \includegraphics[width=0.5\linewidth]{./img/dog.jpg}
   \caption{Lowe proves that this is a scaled version of Lindeberg}
   \label{fig:dog}
 \end{figure}
@@ -836,7 +842,7 @@ For each pair we take the differences, then we seek for extrema in the DoG.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/dog_1.png}
+  \includegraphics[width=0.9\linewidth]{./img/dog_1.png}
   \caption{Difference of Gaussian}
   \label{fig:dog_1}
 \end{figure}
@@ -858,11 +864,11 @@ Keypoints with low contrast, corresponding to weak DoG responses, are often sens
 
 \subsubsection{Scale and Rotation Invariance Description}
 
-DoG are rotation invariant because of circular simmetry.
+DoG are \textbf{rotation invariant because of circular simmetry}.
 Once each keypoint has been extracted, a surrounding patch is considered to compute its descriptor (scale and rotation invariant).
 
-We need to identify a prominent direction inherent to the patch (the canonical orientation) and, based on such direction, define a local reference frame.
-A reasonable choice consists in identifying the direction along which most of the gradient is found.
+We need to identify a \textbf{prominent direction} inherent to the patch (the canonical orientation) and, based on such direction, define a local reference frame.
+A reasonable choice consists in identifying the \textbf{direction along which most of the gradient is found}.
 
 To compute the canoncial orientation we need to define a scale and rotation invariant description.
 Once each keypoint has been extracted, a surrounding patch is considered to compute its descriptor (scale and rotation invariant).
@@ -871,14 +877,14 @@ Once each keypoint has been extracted, a surrounding patch is considered to comp
   \item Rotation invariance: a canonical patch orientation is computed, so that the descriptor can then be computed on a canonically-oriented patch (orientation with respect to a new reference system, not the one of the image).
 \end{itemize}
 
-Lowe proposed to compute the canoncial orientation of DoG keypoints as follows: given the keypoint, the magnitude and orientation of the gradient are computed at each pixel of the associated Gaussian-smoothed image, L:
+Lowe proposed to compute the \textbf{canoncial orientation of DoG keypoints} as follows: given the keypoint, the magnitude and orientation of the gradient are computed at each pixel of the associated Gaussian-smoothed image, L:
 
 \begin{itemize}
   \item $m(x,y) = \sqrt{(L(x+1,y)-L(x-1,y))^2 + (L(x,y+1) - L(x,y-1))^2}$
   \item $\theta(x,y) = \tan^{-1}\frac{L(x,y+1)-L(x,y-1)}{L(x+1,y)-L(x-1,y)}$
 \end{itemize}
 
-We can then compute an orientation histogram by accumulating the contributions of the pixels belongigng to a neighborhood of the keypoint location (a bin size of $10\deg$).
+We can then compute an \textbf{orientation histogram} by accumulating the contributions of the pixels belongigng to a neighborhood of the keypoint location (a bin size of $10\deg$).
 The characteristic orientation of the keypoint is given by the highest peak of the orientation histogram.
 Other peaks higher than $80\%$ of the main one would be kept as well.
 A keypoint may have multiple canonical orientations and, in turn, multiple descriptors sharing the same location/scale with diverse orientations (this happen rarely, about on 15\% of the keypoints).
@@ -892,7 +898,7 @@ A keypoint may have multiple canonical orientations and, in turn, multiple descr
 
 \subsubsection{SIFT Descriptor}
 
-The SIFT (Scale Invariant Feature Transform) descriptor is computed as follows:
+The \textbf{SIFT (Scale Invariant Feature Transform)} descriptor is computed as follows:
 \begin{itemize}
   \item $16\times 16$ oriented pixel grid around each keypoint is considered.
   \item This is further divided into $4 \times 4$ regions (each of size $4\times4$ pixels).
@@ -903,7 +909,7 @@ The SIFT (Scale Invariant Feature Transform) descriptor is computed as follows:
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/sift_descriptor.jpg}
+  \includegraphics[width=0.8\linewidth]{./img/sift_descriptor.jpg}
   \caption{The descriptor size is given by the number of regions times the number of histogram bins per region}
   \label{fig:sift_descriptor}
 \end{figure}
@@ -924,7 +930,7 @@ For each feature in $T$ we look for the most similar one in $R$:
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/matching_sift.jpg}
+  \includegraphics[width=0.5\linewidth]{./img/matching_sift.jpg}
   \caption{Image matching process with SIFT}
   \label{fig:matching_sift}
 \end{figure}
@@ -953,23 +959,25 @@ Its projection onto the image plane I is denoted as $m=[u,v]^T$.
 
 \subsubsection{Projective Space}
 
-The physical space is a 3D Euclidean Space ($\mathbb{R}^3$) whose points can be represented as 3D vectors in a given reference frame.
+The \textbf{Physical Space} is a 3D Euclidean Space ($\mathbb{R}^3$) whose points can be represented as 3D vectors in a given reference frame.
 In this space parallel lines do not intersect.
 Points at infinity cannot be represented in this vector space.
 
-The Projective Space is a mathematical engine to handle the geometry of image formations.
+The \textbf{Projective Space} is a mathematical engine to handle the geometry of image formations.
 In the Projective space we append one more coordinate to the Euclidean triplets.
-A point is represented by an equivalence class of quadruples, wherein equivalent quadruples differe just by a multiplicative factor.
-
-This is called \textbf{homogeneous coordinates} representation of the 3D point having Euclidean coordinates $(x,y,z)$.
+A point is represented by an equivalence class of quadruples, wherein equivalent quadruples differ just by a multiplicative factor.
+This is called the \textbf{homogeneous coordinates} representation of the 3D point having Euclidean coordinates $(x,y,z)$.
 The space associated with the homogeneous coordinate's representation is called Projective Space, denoted as $P^3$
-\vspace{1em}
-We are interested in Projective Spaces because Perspective Projection is more conveniently dealt with using projective coordinates.
-\vspace{1em}
+
+\vspace{0.6em}
+We are interested in Projective Spaces because Perspective Projection is \textbf{more conveniently} dealt with using projective coordinates.
+\vspace{0.6em}
+
 The point at infinity is a point in the space, the vanishing point is a point into the image plane.
 Points at infinity of the 3D lines are the points of the 3D Projective Space \textbf{having the fourth coordinate equal to 0}.
 
 To map such points into the Euclidean Space we would divide by the fourth coordinate (which is 0) which is not a valid representation in the Euclidean Space.
+
 The point $(0,0,0,0)$ it's not the origin, but an undefined point. The origin is represented in homogeneous coordinates as $(0,0,0,k)$, with $k\neq 0$.
 
 Given a 3D point $\tilde{M} = [x,y,z]^T$ (with coordinates expressed in the Camera Reference Frame) and its 2D projection onto the image plane $\tilde{m} = [u,v]^T$.
@@ -1072,7 +1080,7 @@ $\tilde{P} = A[I|0]G$ or also $\tilde{P}=A[R|T]$.
 
 $G$ is called \textbf{Extrinsic Parameter Matrix} and it encodes the position and orientation of the camera with respect to the World Reference Frame.
 The rotation matrix has only 3 independent parameters, which correspond to the rotation angles around the axis of the reference frame.
-$T$ has 3 independent parameters
+$T$ has 3 independent parameters.
 The total number of \textbf{extrinsic parameters} is 6 (3 translation, 3 rotation).
 $A$ has 4 independent parameters.
 The general form of the Perspective Projection Matrix can be thought of as encoding:
@@ -1162,7 +1170,7 @@ The approaches can be split into:
 
 \subsubsection{Zhang's method for Camera Calibration}
 
-Of the chessboard pattern we know the number of internal corners and the size of the squares.
+We use a chessboard pattern of which we know the number of internal corners and the size of the squares.
 Internal corners can be easily detected by standard algorithms, like the Harris corner detector.
 Typically the camera is fixed and you move the calibration target in front of the camera.
 The $[R\,T]$ are estimated with respect to the reference system attached to the target, but it changes alongside with the pattern.
