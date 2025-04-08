@@ -1348,7 +1348,7 @@ This helps to prevent overfitting because we don't associate a certain pattern t
   \centering
   \includegraphics[width=0.8\linewidth]{./img/dropout.jpg}
   \caption{Each layer has a $50 \%$ dropout probability}
-  \label{fig:convolutions_flops}
+  \label{fig:dropout}
 \end{figure}
 
 Dropout and normalization are used only at training time.
@@ -1364,6 +1364,202 @@ We can, for example, sample random crops/scales of the data or do color augmenta
 Cutout is the process where we remove a random square region of the input image.
 This forces the network to use a more diverse set of features, helping generalization.
 It's gray because we subtract the mean from this pictures, and so the number in the cutout becomes 0.
+
+\subsection{CNNs}
+
+\subsubsection{AlexNet \& ZFnet}
+In 2012 Alex Krizhevsky proposed AlexNet, which had almost a $9\%$ of improvement on SOTA.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/alexnet.png}
+  \caption{AlexNet architecture}
+  \label{fig:alexnet}
+\end{figure}
+
+In the image \ref{fig:alexnet}, we see only one half of the network, since the architecture is replicated identically 2 times to be used on a 2 GPU setup.
+The network is composed by a \textbf{stem layer} at the beginning, which is a convolution layer that performs a fast reduction in the spatial size of the activations, mainly to reduce memory and computational cost.
+The first layer has two $11 \times 11$ kernels, which extracts corners/edges/blobs.
+
+To counteract these problems ZFnet used $7\times 7$ convolutions with stride 2 in the first layer and $5\times 5$ convolutions with stride 2 also in the second convolutional layer.
+
+\subsubsection{VGG}
+To avoid the vanishing gradient problem VGG used $3 \times 3$ convolutions only, and didn't use the stem layer.
+The network was shallower, and used only convolutions and pooling.
+At the end it used the same flattening and classification head.
+
+Pre initialization with weights from shallower architectures was crucial to let the training progress, since batch normalization wasn't yet invented.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.35\linewidth]{./img/vgg.jpg}
+  \caption{VGG architecture}
+  % \label{fig:alexnet}
+\end{figure}
+
+VGG introduces the idea of designing a network as repetition of stages, i.e. a fixed combination of layers that process activations at the same spatial resolution.
+In VGG we have 3 types of blocks:
+\begin{itemize}
+  \item \verb|conv-conv-pool|.
+  \item \verb|conv-conv-conv-pool|.
+  \item \verb|conv-conv-conv-conv-pool| (we can get a more complex convolution by combining $3\times 3$ convolutions).
+\end{itemize}
+
+One stage has the same receptive field of larger convolutions but requires less parameters and computation, and introduces more non-linearities.
+
+The disadvantage is that the memory for activation doubles.
+
+\begin{table}[htbp]
+\begin{tabular}{|l|l|l|l|l|}
+\hline
+convolutional layer                                    & params       & flops                 & ReLUs & number of activations                \\ \hline
+$C \times C \times 5 \times 5, \,S=1,\, P=2$           & $25C^2 + C$  & $50C^2 W_{in} H_{in}$ & 1     & $C\times W_{in} \times H_{in}$ \\ \hline
+2 stacked $C \times C \times 3 \times 3, \,S=1,\, P=1$ & $18C^2 + 2C$ & $10C^2 W_{in} H_{in}$ & 2     & $2\times C \times W_{in} \times H_{in}$ \\ \hline
+\end{tabular}
+\end{table}
+
+VGG-16 is composed by 138M parameters ($2.3x$ AlexNet), mostly in fully connected layers.
+The computational cost is $\approx 4$ Tflops, mainly due to convolutions, and the network uses about $\approx 16.5$ GB of memory.
+
+\subsubsection{Inception v1 (GoogLeNet)}
+The main hallmark of this architecture is the improved utilization of the computing resources inside the network.
+This was achieved by a carefully crafted design that allows for increasing the depth and width of the network while keeping the computational budget constant.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.99\linewidth]{./img/googlenet.png}
+  \caption{GoogLeNet architecture}
+\end{figure}
+
+The network is composed by stem layers which shrink the image size, a stack of inception modules where a combination of different operations are combined, and a final classifier.
+There are 22 trainable layers and about 100 modules (the blue and red blocks).
+
+\paragraph{Stem layers}
+Stem layers aggressively downsamples inputs: from 224 to 28 width/height in 5 layers.
+It brings it down a bit more gently than AlexNet.
+To reach $28\times 28$, VGG uses 10 layers.
+
+\paragraph{Naïve inception module}
+The main idea of the inception module is that it consists of multiple pooling and convolution operations with different sizes ($3\times 3$, $5\times 5$) in parallel, instead of using just one filter of a single size.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/inception_naive.jpg}
+  % \caption{}
+\end{figure}
+However, there are two main problems:
+\begin{itemize}
+  \item Due to max-pool, the number of channels grows very fast when inception modules are stacked on top of each other.
+  \item $5 \times 5$ and $3 \times 3$ convolutions on many channels become prohibitively expensive if we stack a lot of them.
+\end{itemize}
+
+\paragraph{$1 \times 1$ convolutions and the inception module}
+To overcome the problems, we use $1 \times 1$ convolutions before feeding the data into $3\times 3$ or $5 \times 5$ convolutions.
+$1\times 1$ convolutions don't reason locally, but along the channel on a single dimension.
+They allow us to change the depth of the activations while preserving the spatial size.
+This is effectively a dimensionality reduction.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/11conv.jpg}
+  \caption{$1 \times 1$ convolution}
+\end{figure}
+
+By adding $1\times 1$ convolutions before larger convs and after max pool we can:
+\begin{itemize}
+  \item \textbf{Control the time complexity} of the larger convolutions by reducing the channel dimension.
+  \item \textbf{Control the number of output channels} by reducing the depth of the max pool output.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/inception.jpg}
+  % \caption{}
+\end{figure}
+
+\paragraph{Fully-connected classifier vs global average pooling}
+As we have seen the last 3 fully connected layers were the heaviest, since we had very high dimensional spatial information.
+To reduce the number of parameters needed between convolutional features and fully connected layers we get rid of spatial dimensions by averaging them out, because the activations should contain high level information.
+
+\subsubsection{Inception v3}
+Inception v3 leverages convolution factorizations to increase the computational efficiency and to reduce the number of parameters, the two main methods are:
+\begin{itemize}
+  \item $3 \times 3$ followed by $3 \times 3$ instead of a $5 \times 5$ (VGG idea).
+  \item $3 \times 3$ can be factorized in a $3\times 1$ and $1 \times 3$.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/inception3.png}
+  \caption{Instead of always using the same inception layers, we use inception with 3 different layers}
+\end{figure}
+
+\subsubsection{Residual Networks (ResNet)}
+ResNet was invented to address the problem of vanishing gradients and degradation in very deep neural networks.
+The core innovation in ResNet is the residual block, which introduces skip connections.
+In traditional networks, each layer feeds directly into the next layer.
+In ResNet, the input to a layer is also added to its output, by creating what's called a skip connection (like an identity shortcut).
+This means that instead of learning a direct mapping $H(x)$, the network learns the residual function $F(x) = H(x) - x$.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/resnet.png}
+  % \caption{}
+\end{figure}
+
+The network is a stack of stages with fixed design rules (inspired by VGG):
+\begin{itemize}
+  \item Stages are a stack of residual blocks.
+  \item Each residual block is a stack of two $3 \times 3$ convolutions with batch-norm.
+  \item The first block of each stage halves the spatial resolution (with stride 2 convolutions) and doubles the number of channels.
+  \item It uses stem layer and global average pooling as GoogLeNet.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/resnet_skip.png}
+  % \caption{}
+\end{figure}
+
+ResNet is still the standard baseline for most tasks today.
+
+The residual blocks described so far \textbf{cannot be used as the first block of a new stage}, because the number of channels and the spatial dimensions do not match along the residual connection.
+The authors then decided to use a $1\times 1$ convolution with stride 2 and $2C$ output channels (no activation functions/nonlinearity).
+
+\paragraph{Bottleneck residual block}
+A bottleneck residual block is a design used in very deep ResNets (e.g. ResNet-50, 101, 152) to enable training with more layers while maintaining computational efficiency.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/resnet_bottleneck.png}
+  % \caption{}
+\end{figure}
+
+\subsubsection{ResNeXt}
+Inception modules are effective multi-branch architectures, which can be thought of as following a split-transform-merge paradigm.
+ResNeXt is a simpler way to realize multiple pathways, since it decomposes each bottleneck residual block of ResNets into $G$ parallel branches.
+The number of branches (cardinality) is a new hyperparameter.
+Once $G$ is chosen, it is possible to obtain a $G \times d$ ResNeXt block with complexity similar to the original ResNet block.
+$d$ must be proportional to $C$.
+
+\paragraph{ResNeXt block as grouped convolutions}
+
+
+
+
+
+
+
+
+
+
+The blocks work by strategically reducing and expanding channels, keeping parameters and computation manageable.
+This balances depth and efficiency, making training feasible and effective.
+
+
+
+
+
+
+
 
 
 
