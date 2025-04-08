@@ -1235,13 +1235,137 @@ What if more pixels go to the same position?
 
 Since the coordinates are always real values the different mapping strategies can be to map the closest point or to interpolate between the 4 closest points.
 
-
-
-
-
-
-
 \vspace{3em}
 \section{Advanced Topics in Deep Learning for Computer Vision}
+
+\subsection{Recall on CNNs}
+
+In representation learning we try to find good ways of representing data, often by learning a useful transformation of the raw data.
+Deep learning is a subset of representation learning.
+
+\subsubsection{Gradient descent}
+Neural networks are usually trained using iterative, gradient-based optimizers that drive the cost function to a very low value.
+The convergence point of gradient descent depends on the initial values of the parameters.
+For feedforward neural networks it's important to initialize all weights to small random values and to initialize biases to zero or to small positive values.
+To apply gradient based learning we must choose a cost function and how to represent the output of the model.
+The derivative $f'(x)$ gives the slope of $f(x)$ at the point $x$.
+The derivative is useful for minimizing a function because it tells us how to change $x$ in order to make a small improvement in $y$.
+A point that obtains the absolute lowest value of $f(x)$ is a global minimum.
+
+To reach the minimum we use the formula $w' = w - \alpha \frac{\partial J(w,b)}{\partial w} \,\, b' = b - \alpha \frac{\partial J(w,b)}{\partial b}$, where $\alpha$ is the learning rate, which controls how big are the steps that we take during the gradient descent.
+If the slope is positive, we subtract the quantity in order to reach the minimum, or else we do the opposite thing.
+
+As the training set size grows to billions of examples, the time to take a single gradient step becomes prohibitively long.
+Stochastic/Minibatch gradient descent are extensions of the gradient descent algorithm. We can sample a minibatch of examples drawn uniformly from the training set (1 for stochastic).
+It's like training every time on a different (smaller) training set.
+
+\paragraph{Optimizers: momentum}
+Momentum was designed to accelerate learning, especially in the face of high curvature, small but consistent gradients, or noisy gradients.
+The size of the step depends on how large and how aligned a sequence of gradients are.
+The step size is largest when many successive gradients point in the same direction.
+Momentum smooths the step of the gradient descent in its path to the minimum.
+We compute: $W^{[l+1]} = W^{[l]} - \alpha v_{W^{[l + 1]}}$, where $v_{W^{[l + 1]}} = \beta v_{W^{[l]}} + (1-\beta) \frac{\partial J(...)}{\partial W^{[l]}}$.
+Root Mean Square Propagation (RMSprop) uses an exponentially decaying average to discard history from the extreme past so that it doesn't impede the convergence.
+
+\paragraph{Optimizers: Adam}
+The name derives from "adaptive moments", and it can be seen as the combination of RMSprop and momentum.
+It's fairly robust to the choice of hyperparameters, though the learning rate sometimes needs to be changed from the suggested default.
+There is a first order and a seond order Adam.
+The first order Adam uses the gradient and its moving averages (first moments) to update the parameters.
+The second order Adam incorporates information about the curvature of the loss surface, using approximations of the Hessian or second order derivatives, which leads to more informed and potentially more efficient updates but requires more computational resources.
+
+\subsubsection{Convolutions and filters}
+An image is characterized by height, width and number of channels.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/convolution_filter.jpg}
+  \caption{A convolutional filter has the \textbf{same depth} of the input volume, so the output dimension is 1.}
+  % \label{fig:forward_mapping}
+\end{figure}
+
+We can also train more than one filer, where each filter outputs a feature map.
+By stacking activation maps we get a new volume.
+
+Since convolutions shrink the images we can use padding to preserve the edges.
+We have always considered a stride of 1 (moving the convolutional filter by one pixel), but we can also use different stride sizes to shrink the image.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/deep_cnn.jpg}
+  \caption{By stacking together convolutional filters, pooling layers and fully connected layers we can design a Deep CNN.}
+\end{figure}
+
+\paragraph{Pooling}
+A pooling layer is used to reduce the size of the representation in order to speedup computation.
+Pooling comes usually after each conv layer or after a block (or set) of conv layers.
+It's applied to each activation map independently.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/pooling.jpg}
+  \caption{Example: pooling of dimension 2 and stride 2.}
+\end{figure}
+
+\paragraph{Receptive fields}
+The input pixels affecting a hidden unit are called its receptive field.
+We can encode the information in all the pixels to a single point.
+We go from spatial to semantic information (we transform spatial information to semantic information).
+
+\paragraph{Convolution parameters and flops}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/convolutions_flops.jpg}
+  \caption{}
+  \label{fig:convolutions_flops}
+\end{figure}
+
+As we can see in \ref{fig:convolutions_flops}, the number of learnable parametes for the convolutional layer is $6 \times (3 \times 5 \times 5 + 1) = 6 \times 76 = 456$ (6 convolutional blocks, 3 channels per convolutional block, $5 \times 5$ convolution, ).
+The size of the output is $H_\text{{out}} = W_\text{{out}} = 32 - 5 + 2 * 2 + 1 = 32$.
+Hence, there are $6 \times 32 \times 32 = 6144$ values in the output activation ($\approxeq 24$KB).
+
+Since each of them is obtained as the dot product between the weights and the input, which requires to perform $n$ multiplications and $n$ summations for inputs of size $n$, i.e. $2n$ flops.
+
+\subsubsection{Batch Normalization (BatchNorm)}
+BatchNorm is a technique designed to stabilize and accelerate the training of deep neural networks by addressing internal covariate shift: the change in the distribution of layer activations caused by updates to preceding layers during training.
+By normalizing activations at each layer, BatchNorm ensures that gradients are propagated more effectively, enabling coordinated updates across deep networks.
+
+Let $Z^{[l]}$ be a minibatch of activations of the $l$-th layer to be normalized.
+To normalize $Z^{[l]}$, we replace it with: $Z^{[l]}_{norm} = \frac{Z^[l] - \mu}{\sigma}$, where $\mu$ is a vector containing the mean of each unit and $\sigma$ is a vector containing the mean of each unit and $\sigma$ is a vector containing the standard deviation of each unit.
+$\mu$ and $\sigma$ are running averages of the values seen during training.
+BatchNorm helps with speeding up the training, and has a slight regularization effect (but we don't use it for this reason).
+
+We use LayerNorm for fully connected layers because it normalizes per sample, making it batch-size independent.
+We use InstanceNorm for convolutional layers because it normalizes per sample and per channel.
+
+\subsubsection{Dropout regularization}
+Dropout randomly deactivates a fraction of neurons during training, effectively training an ensemble of smaller sub-networks.
+For each layer, you set a dropout probability, determining the chance a neuron is ignored in a forward pass.
+This helps to prevent overfitting because we don't associate a certain pattern to a certain output of the network.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/dropout.jpg}
+  \caption{Each layer has a $50 \%$ dropout probability}
+  \label{fig:convolutions_flops}
+\end{figure}
+
+Dropout and normalization are used only at training time.
+When we test the network we switch off dropout and regularization.
+
+Another powerful regularization technique is just having more data.
+
+\subsubsection{Data augmentation}
+We can create more data by modifying the images we already have.
+We must only make transformations which keep the labels valid.
+We can, for example, sample random crops/scales of the data or do color augmentation.
+
+Cutout is the process where we remove a random square region of the input image.
+This forces the network to use a more diverse set of features, helping generalization.
+It's gray because we subtract the mean from this pictures, and so the number in the cutout becomes 0.
+
+
+
 
 \end{document}
