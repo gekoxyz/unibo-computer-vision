@@ -1473,8 +1473,13 @@ By adding $1\times 1$ convolutions before larger convs and after max pool we can
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.8\linewidth]{./img/inception.jpg}
-  % \caption{}
+  \caption{Inception module in GoogLeNet}
+  \label{fig:inception}
 \end{figure}
+
+In \ref{fig:inception} we can see how Google exploited the properties of $1\times 1$ convolutions to make an incpetion module without making the complexity explode.
+The idea is that we take our input, we shrink it by using $1\times 1$ convolutions, and then we apply the $5 \times 5$ and $3 \times 3$ spatial convolutions.
+We use $1\times 1$ convolutions \textbf{after} pooling to shrink the output (we don't need to compress before the operation but after it).
 
 \paragraph{Fully-connected classifier vs global average pooling}
 As we have seen the last 3 fully connected layers were the heaviest, since we had very high dimensional spatial information.
@@ -1490,7 +1495,7 @@ Inception v3 leverages convolution factorizations to increase the computational 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.8\linewidth]{./img/inception3.png}
-  \caption{Instead of always using the same inception layers, we use inception with 3 different layers}
+  \caption{Instead of always using the same inception layers, we use 3 different inception layers}
 \end{figure}
 
 \subsubsection{Residual Networks (ResNet)}
@@ -1503,7 +1508,7 @@ This means that instead of learning a direct mapping $H(x)$, the network learns 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.8\linewidth]{./img/resnet.png}
-  % \caption{}
+  \caption{The ResNet architecture}
 \end{figure}
 
 The network is a stack of stages with fixed design rules (inspired by VGG):
@@ -1523,14 +1528,14 @@ The network is a stack of stages with fixed design rules (inspired by VGG):
 ResNet is still the standard baseline for most tasks today.
 
 The residual blocks described so far \textbf{cannot be used as the first block of a new stage}, because the number of channels and the spatial dimensions do not match along the residual connection.
-The authors then decided to use a $1\times 1$ convolution with stride 2 and $2C$ output channels (no activation functions/nonlinearity).
+The authors then decided to use a $1\times 1$ convolution with stride 2 and $2C$ output channels to expand the dimension of the channels.
 
 \paragraph{Bottleneck residual block}
 A bottleneck residual block is a design used in very deep ResNets (e.g. ResNet-50, 101, 152) to enable training with more layers while maintaining computational efficiency.
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.8\linewidth]{./img/resnet_bottleneck.png}
-  % \caption{}
+  \caption{Instead of working with $3 \times 3$ convolutions we go from $4C$ down to $C$ and then expand again}
 \end{figure}
 
 \subsubsection{ResNeXt}
@@ -1542,17 +1547,121 @@ $d$ must be proportional to $C$.
 
 \paragraph{ResNeXt block as grouped convolutions}
 
+Grouped convolutions split input channels into $G$ independent groups.
+Each group processes a subset of channels, reducing computational cost and parameters while maintaining feature diversity.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/grouped_convolutions.jpg}
+  \caption{Grouped convolution with $G=2$}
+\end{figure}
+
+An input with $C$ channels is divided into $G$ groups, each with $\frac{C}{G}$ channels.
+Each group has its own filters, producing $\frac{K}{G}$ output channels (for $K$ total filters).
+The outputs are concatenated, resulting in $K$ channels.
+
+This is useful because it's more efficient and each group learns distinct features, enhancing model capacity.
+
+ResNeXt introduces cardinality (the number of groups of $G$) as a new dimension.
+It uses grouped convolutions to create parallel pathways within a residual block, improving feature learning without increasing depth/width.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/resnext_grouped.jpg}
+  \caption{The ResNeXt block as grouped convolutions, on the left we have a normal convolutional block, in the middle we split to reduce computation and on the right we join again.}
+\end{figure}
+
+The structure of the ResNeXt block is:
+\begin{itemize}
+  \item $1\times 1$ convolution to compress the input channels.
+  \item $3\times 3$ grouped convoltuion to process compressed features in $G$ parallel groups (cardinality). Each group applies transformations independently.
+  \item $1\times 1$ convolutions expands channels back.
+  \item skip connection adds the original input to the output (residual learning).
+\end{itemize}
+
+ResNeXt is more efficient because there are fewer parameters than widening/deepening the network, and by increasing $G$ we can improve the performance without drastically increasing the compute.
+
+\subsubsection{Squeeze-and-Excitation Networks (SENet)}
+It's the last paper which won CVPR.
+It proposed the squeeze-and-excitation module to capture global context and to use it to reweight channels in each block.
+Given the output $U$ of a block with shape $C \times H \times W$ we do:
+\begin{itemize}
+  \item Global average pooling to squeeze.
+  \item General bottleneck formed by two fully connected layers with reduction ratio 16.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/senet.jpg}
+  \caption{SENet block diagram}
+\end{figure}
+
+\subsubsection{Depthwise Separable convolutions}
+F. Chollet one year after the SENet paper proposed the Depthwise Separable convolutions.
+The standard convolutions filter features based on the convolutional kernels and combine features in order to produce new representations.
+This is very expensive.
+Depthwise separable convolutions separates filtering and combination, and this aggressively limits the computational cost.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/separable_convolution.png}
+  % \caption{}
+\end{figure}
+
+\subsubsection{Inverted residual blocks}
+MobileNet-v2 introduced the bottleneck residual block to scale up the model depth by increasing the number of layers per block while keeping the computation and number of parameters roughly constant.
+To this end, it uses a pair of $1\times 1$ convolutions, where the first compresses the number of channels, while the second one expands them.
+Hence, the $3\times 3$ convoltuion operates in the compressed domain.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/bottleneck_residual.jpg}
+  % \caption{}
+\end{figure}
+
+As we know, compression usually results in information loss, so in MobileNet-v2 inverted residual blocks were proposed.
+In this blocks, the first $1\times 1$ convolution expands the channels, while the second compresses them back, according to an expansion ratio $t$.
+To limit the increase in computation, the inner $3\times 3$ convolution is realized as a depthwise convolution (single filter per input channel instead of applying the filters across all the input channels).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/inverted_residual.jpg}
+  % \caption{}
+\end{figure}
+
+\subsubsection{MobileNet-v2}
+MobileNet-v2 is a stack of inverted residual blocks with ReLUs in between.
+The number of channels grows slowly compared to previous architectures, as we can see in the purple rectangle in figure \ref{fig:mobilenet}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/mobilenet.jpg}
+  % \caption{}
+  \label{ref:mobilenet}
+\end{figure}
+
+Whenever spatial dimensions or number of channels do not match between input and output, there are no residual connections.
+
+\subsubsection{EfficientNet}
+EfficientNet proposed to design the network based on resources.
+As we know there are 3 dimensions for scaling a neural network: width, depth and resolution.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.8\linewidth]{./img/efficientnet.jpg}
+  \caption{Different types of NN scaling.}
+\end{figure}
+
+Bigger networks with larger width, depth or resolution tend to achieve higher accuracy, but the accuracy gain quickly saturates after reaching $80 \%$, which is a limitation of single dimenison scaling.
+\textbf{Scaling dimensions are not independent}. Intuitively, for higher resolution images, we should increase network depth, such that the larger receptive fields can help to capture similar features that include more pixels in bigger images.
+Correspondingly, we should also increase netowrk width when the network resolution is higher, in order to capture more fine-grained patterns with more pixels in high resolution images.
+
+EfficientNet  uses a compound coefficient $\phi$ to scale all dimensions in a principled way.
+
+\subsection{RNNs \& Transformers}
 
 
 
-
-
-
-
-
-
-The blocks work by strategically reducing and expanding channels, keeping parameters and computation manageable.
-This balances depth and efficiency, making training feasible and effective.
 
 
 
