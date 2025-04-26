@@ -1983,7 +1983,201 @@ The convolution in combination with max pooling/striding makes CNNs approximatel
 When a module is translation invariant, it means that if we apply translation transformation on the input image the output of the module won't change.
 To solve the inductive bias they gave the network so much data that the classes appear anywhere.
 
+\subsection{Object Detection}
+Previously, we have done object detection with SIFT, but we were just able to say if the object was in the image, not where it was.
+Now we want to do detection by putting a bounding box around the object.
+We do this by returning a set of quadruples: $[x, y, h, w, o]_{i=0}^{K}$, where we have the box position, width, height, and class of the output.
 
+The main challenges are the different lengths of the outputs (since we can detect from 0 to $K$ images), the fact that the outputs have both categorical and spatial information, and the fact that the images are usually processed at higher resolution than neural networks for image classification.
 
+\subsubsection{Viola-Jones Object Detector}
+It's a general purpose object detection framework, but it has been mainly applied to faces.
+We will now see the three main innovations of the algorithm: the AdaBoost algorithm, cascade, and the use of integral images.
+
+\paragraph{AdaBoost algorithm}
+A Weak Learner (WL) is a simple classifier whose error is slightly better than random guessing.
+Boosting is a way to train and build an ensemble of $M$ weak classifiers to obtain a Strong Learner SL.
+After training a weak learner, the examples are re-weighted in order to emphasize those which were incorrectly classifier by the previous weak classifier.
+
+The \textbf{AdaBoost} algorithm steps are:
+\begin{enumerate}
+  \item Given $N$ training samples $(x^(i), y^(i))$, assign equal weight to each training example $w^(i)=\frac{1}{N}$.
+  \item Iterate for $j = 1, ..., M$ weak learners:
+  \begin{enumerate}
+    \item Fit the best classifier $WL_j$ to the training data by using the current weights.
+    \item Compute the weighted error rate $\epsilon_j = \sum_{i:\, x^{(i)} \text{ is missclassified}} w^{(i)}$.
+    \item Compute $\beta_j = \frac{1 - \epsilon_j}{\epsilon_j}$.
+    \item Updates weights $w^(i) = w^(i)\beta_j$ for wrongly classified examples.
+    \item Re-normalize $w^(i)$ to sum to 1.
+  \end{enumerate}
+  \item The Strong Learner is given by a weighted majority vote $SL(x) = \sum_{j} \ln \beta_j WL_j(x) > 0$, con $\ln \beta_j = \alpha_j$.
+\end{enumerate}
+
+The idea is that missclassified examples gain weight, forcing subsequent learners to focus on harder cases.
+
+\paragraph{Haar-like features}
+Weak classifiers used to detect faces are simple rectangular filters, composed of 2 to 4 rectangles applied at a fixed position within a $24 \times 24$ patch.
+Even with this simple definition there are over $160$ k possible filters in a $24 \times 24$ patch.
+AdaBoost is used to select a small subset of the most effective filters.
+
+\paragraph{Dataset}
+The dataset consisted of 4916 hand labeled faces, scaled and aligned to a base resolution of $24 \times 24$ pixels.
+The non-face windows were collected by selecting random sub-windows from a set of 9500 images which did not contain faces.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/adaboost.png}
+  \caption{The 2 most effective features selected by AdaBoost on the training set.}
+\end{figure}
+
+\paragraph{Integral images and fast feature computation}
+To speed up the computation of rectangular features, the authors proposed the use of so-called integral images $II$, where $II(i,j) = \sum_{i' \leq i, j' \leq j} I(i', j')$.
+
+We can compute the value of $II(i,j)$ just by looking at the 3 neighbours: $II(i,j) = II(i, j-1) + II(i-1, j) - II(i-1, j-1) + I(i,j)$, where $II$ are the values in the integral image, and $I$ is the value in the original image.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/integral_images.jpg}
+  \caption{$II(1,2) = II(1,1) + II(0,2) - II(0,1) + I(1,2) = 14 + 11 - 5 + 1$}
+\end{figure}
+
+With integral images we could have an overflow problem if numbers get too big.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/integral_filters.png}
+  \caption{Rectangular filters can be computed in constant time with integral images}
+\end{figure}
+
+\paragraph{Multi-scale sliding window detector}
+At test time, the strong classifier is applied to all spatial locations in the image.
+Multi-scale detection is necessary, since faces are not necessarily $24\times 24$.
+To achieve good performance, about 200 features are used to classify each patch.
+Even if each feature can be computed very fast (thanks to integral images) there are still too many windows in an image to achieve real-time performance.
+
+Faces are far less frequent in an image than background regions.
+Most of the time is wasted computing a lot of features for background patches.
+The key idea is then to reject most of the easy background patches with a simpler classifier which can be ran very fast.
+
+\paragraph{Box overlap}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/cascade_classifier.png}
+  \caption{We use more and more features for face detection classifier after classifier}
+\end{figure}
+
+There will be several overlapping detections.
+To check if two boxes overlap we measure the Intersection over Union ($IoU$) score: $IoU(BB_i, BB_j) = \frac{|BB_i \cap BB_j|}{|BB_i| + |BB_j| - |BB_i \cap BB_j|}$. $0.75$ corresponds to a good overlap, $0.90$ to a perfect one.
+To obtain a single detection out of a set of overlapping boxes we perform Non Maxima Suppression of boxes.
+Non Maxima Suppression considers the highest scoring Bounding Box, eliminates all the boxes with overlap greater than a threshold, and repeats this until all the boxes have been tested.
+
+A detection is considered a True Positive if its overlap with the ground truth $BB^{GT}$ is greater than $\rho_{IoU}$.
+
+\subsubsection{Transfer Learning}
+If we can assume that only one object is present in the image, object detection simplifies to object localization.
+Transfer learning is a technique where a model trained on one task is reused (or "transferred") for a different but related task.
+Instead of training a model from scratch, you start with a pre-trained model and fine-tune it for your specific problem.
+To solve object detection we can reuse any architecture used in image classification, by adding a regression head for predicting the bounding box.
+
+We can apply a classification CNN as a sliding window detector.
+We have to add a background class to discard background patches.
+The problem is that there are too many boxes to try, since we have to try lots of positions with different scales and aspect ratios.
+The solution is to use region proposals.
+
+\subsubsection{Region proposals}
+Region proposal algorithms inspect the image and attempt to find regions of an image that likely contain an object.
+The algorithm as a first step oversegments the image into highly uniform regions, and then, based on similarity scores of color, texture and size it iteratively aggregates them.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/region_proposal.jpg}
+  \caption{The 2 most similar regions are grouped together and then new similarities are calculated between the resulting region and its neighbours}
+\end{figure}
+
+\subsubsection{R-CNN: Region-based CNN}
+
+Region-based CNN is the first object detector network.
+As we can see in \ref{fig:rcnn} we run selective search to get about 2000 proposals, then we anisotropically (not uniformly across all directions) warp these proposals and add some pixels of context into a fixed size, to be able to input them in AlexNet, and for each proposal we get a class and a bounding box correction.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/rcnn.jpg}
+  \caption{R-CNN network architecture}
+  \label{fig:rcnn}
+\end{figure}
+
+The problem is that since we have 2 different algorithms (one for the region proposal and one for AlexNet) we can't backpropagate through both of them.
+
+\subsubsection{Fast R-CNN}
+
+In the Fast R-CNN architecture showed in \ref{fig:fastrcnn} we can see that the model has been modified to run the first few layers of AlexNet on the original image, apply RoI pooling to crop and warp convolutional features according to proposal, and then run a small per-region network on each region to get the output class and bounding box correction.
+This results in a faster networks since we don't have to apply 2000 CNN forward passes per image, but we apply most of the CNN before warping.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/fastrcnn.png}
+  \caption{Fast R-CNN network architecture}
+  \label{fig:fastrcnn}
+\end{figure}
+
+Fast R-CNN uses the same bounding box correction of R-CNN, but with a smooth L1 loss (equal to L2 near the origin, but smoother elsewhere).
+
+\paragraph{RoI pooling}
+The RoIPool layer converts activations inside Region of Interest, corresponding to rescaled Selective Search regions, into activations with fixed spatial dimensions, which are the ones required by the remaining layers of the network.
+To do RoI pooling, given a region:
+\begin{enumerate}
+  \item Snap the region to the grid.
+  \item Apply max pooling kernels with approximate size $[H_r/H_o]\times [W_r/W_o]$ and approximate stride $s = [H_r/H_o]\times[W_r/W_o]$.
+\end{enumerate}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/roipool.png}
+  \caption{RoI pooling.}
+\end{figure}
+
+\subsubsection{Faster R-CNN}
+
+In Fast R-CNN proposals are not learned, so the selective search is slow.
+In Faster R-CNN they introduced a RPN (Region Proposal Network), which learns to predict the proposal box and the objectness score.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/fasterrcnn.png}
+  \caption{Faster R-CNN network architecture.}
+\end{figure}
+
+\paragraph{Region Proposal Network}
+
+Region Proposal Networks are applied to a small $3\times 3$ window, which is approximately an object sized window in the original image and doesn't correspond to what we see in \ref{fig:rpn}, predicts the objectness and proposal bounding box.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/rpn.jpg}
+  \caption{Region Proposal Network architecture.}
+\end{figure}
+
+When the objectness score is low, the localization head produces its output, but it's meaningless and it will be ignored.
+
+\paragraph{Region Proposal Network with anchor}
+We can simplify the creation of proposals.
+An easier task may be to correct an input proposal, as done in R-CNN.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/rpn_anchor.jpg}
+  \caption{Our proposal here is a fixed scale and aspect-ratio box, known as anchor.}
+\end{figure}
+
+Objects have different scales and asepct ratios, so we use several anchors with different scale and aspect ratios.
+The RPN predicts $k$ objectness scores and $k$ corrections.
+
+When training RPNs, given an image and a ground truth bounding box if the anchor has a low IoU with all ground-truth boxes in an image, it's considered as background.
+
+In standard Faster-RCNN, the RPN processes only the last activation of the feature extractor, which is a semantically rich signal since it includes higher level features than previous activations, but very coarse in spatial resolution.
+Even if small scale anchors are provided, it may miss objects smaller than the grid size.
+
+% slide 62/71
 
 \end{document}
