@@ -33,7 +33,7 @@ The \textbf{geometric model of image formation} in a pinhole camera is known as 
   \caption{perspective projection}
 \end{figure}
 
-Which, by writing the poitns as vectors and the plane's coordinates, becomes the geometric model in the image \ref{fig:perspective_projection_axis}
+Which, by writing the points as vectors and the plane's coordinates, becomes the geometric model in the image \ref{fig:perspective_projection_axis}
 
 \begin{figure}[htbp]
   \centering
@@ -46,7 +46,7 @@ Given the reference frame in the image \ref{fig:perspective_projection_axis}
 \begin{itemize}
   \item $u$ is the horizontal axis in the image plane.
   \item $v$ is the vertical axis in the image plane.
-  \item $X$ and $Y$ are the respective axis in the 3D reference system. It's called the \textbf{camera reference system} because it is "attached" to the camera.
+   \item $x$ and $y$ are the respective axis in the 3D reference system. It's called the \textbf{camera reference system} because it is "attached" to the camera.
 \end{itemize}
 
 \textbf{For the perspective model these axis must be parallel}
@@ -102,7 +102,7 @@ This task is called stereo matching.
 \subsubsection{Stereo correspondence}
 In stereo correspondence, given a point in one image, we have to find it in the other image which is the projection of the same 3D point.
 Such image points are called corresponding points.
-\textbf{Points farther away have a smaller disparity, while close points have a larger display}.
+\textbf{Points farther away have a smaller disparity, while close points have a larger disparity}.
 
 \begin{figure}[htbp]
   \centering
@@ -688,7 +688,7 @@ $M =
   \label{fig:harris_corner_detector}
 \end{figure}
 
-The previous considerations have general validity as $M$ is real and symmatric, and thus can always be diagonalized by a rotation of the image coordinate system.
+The previous considerations have general validity as $M$ is real and symmetric, and thus can always be diagonalized by a rotation of the image coordinate system.
 $$M = R\begin{bmatrix} \lambda_1 & 0 \\ 0 & \lambda_2 \end{bmatrix}R^T$$
 The columns of $R$ are the orthogonal unit eigenvectors of $M$.
 $\lambda_i$ are the corresponding eigenvalues.

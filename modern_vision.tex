@@ -595,7 +595,7 @@ The non-face windows were collected by selecting random sub-windows from a set o
 \paragraph{Integral images and fast feature computation}
 To speed up the computation of rectangular features, the authors proposed the use of so-called integral images $II$, where $II(i,j) = \sum_{i' \leq i, j' \leq j} I(i', j')$.
 
-We can compute the value of $II(i,j)$ just by looking at the 3 neighbours: $II(i,j) = II(i, j-1) + II(i-1, j) - II(i-1, j-1) + I(i,j)$, where $II$ are the values in the integral image, and $I$ is the value in the original image.
+We can compute the value of $II(i,j)$ just by looking at the 3 neighbors: $II(i,j) = II(i, j-1) + II(i-1, j) - II(i-1, j-1) + I(i,j)$, where $II$ are the values in the integral image, and $I$ is the value in the original image.
 
 \begin{figure}[htbp]
   \centering
@@ -654,7 +654,7 @@ The algorithm as a first step oversegments the image into highly uniform regions
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.6\linewidth]{./img/region_proposal.jpg}
-  \caption{The 2 most similar regions are grouped together and then new similarities are calculated between the resulting region and its neighbours}
+  \caption{The 2 most similar regions are grouped together and then new similarities are calculated between the resulting region and its neighbors}
 \end{figure}
 
 \subsubsection{R-CNN: Region-based CNN}
@@ -742,3 +742,604 @@ In standard Faster-RCNN, the RPN processes only the last activation of the featu
 Even if small scale anchors are provided, it may miss objects smaller than the grid size.
 
 % slide 62/71
+\subsubsection{Feature Pyramid Network (FPN)}
+To do object detection at multiple scales, the naive approach is to obtain feature pyramids with CNNs, by running a CNN at each scale of the image, and then perform detection on each activation.
+This is very bad for inference and training times.
+
+A better approach is to give as input to the Region Proposal Network different stages of a CNN.
+This is done because CNNs produce a pyramid of features, with different semantic qualities at different depths.
+But different stages of a CNN have different input sizes (more channels as we go deeper in the network).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/fpn.jpg}
+  \caption{Feature Pyramid Network architecture.}
+\end{figure}
+
+Feature Pyramid Networks overcome this problem by mergoing coarser but higher level features with less effective but more spatially localized features.
+This has a limited computational overhead.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/fpnsum.jpg}
+  \caption{FPN top down path and lateral connections.}
+  \label{fig:fpnsum}
+\end{figure}
+
+In \ref{fig:fpnsum} we can see how the FPN sums together different size pictures.
+To fix the resolution we use Nearest Neighbor upsampling.
+To fix the number of channels we use $1\times 1$ convolutions.
+
+\subsubsection{Faster R-CNN with FPN}
+We can use the FPN for the detection stage.
+We use the FPN as a feature extractor which provides a pyramid of activations.
+Then we can do the usual processing with the RPN and the per-region MLP.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/frcnn_fpn.png}
+  \caption{Faster R-CNN with FPN architecture; as we can see we use the FPN together with the convolutional feature extractor.}
+  \label{fig:frcnn_fpn}
+\end{figure}
+
+Introducing the FPN enables better model accuracy but gives no speedup, since we didn't change anything with the broader architecture.
+
+\subsubsection{One Stage detectors}
+As wee can see from the image \ref{fig:frcnn_fpn}, we have two main stages in the network architecture.
+The first stage runs the expensive backbone feature extractor with the FPN on the full image, and the RPN generates the proposals for the bounding boxes.
+This is done one time per each image.
+The second stage, which is ran once per proposal, has a RoI pool, and a per-region classification and correction.
+
+Instead of a RPN we could try to do all the job by using anchors, since the only things they are missing is learning the anchor dimensions and the class prediction.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/one_stage_detector.png}
+  \caption{in one-stage detectors we can stack the outputs in a combined single tensor with the appropriate number of channels.}
+\end{figure}
+
+\subsubsection{SSD: Single Shot MultiBox Detector}
+Multiple detectors, which are $3\times 3$ convolutions with $k_s \times (C + 1 + 4)$ output channels where $k_s$ is the number of anchors at that scale, are applied to several activations in the backbone (VGG in this example) and to other activations, created by extending the number of convolutional layers.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{./img/ssd.jpg}
+  \caption{Single Shot MultiBox Detector architecture}
+\end{figure}
+
+\subsubsection{YOLOv3}
+
+YOLOv3 uses a custom backbone (DarkNet-53), optimized to have a good trade-off between classification accuracy and speed.
+It uses the idea of multi-scale detections on features with different spatial resolutions, as in FPN but it concatenates $(C)$ activations from different stages instead of summing them.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{./img/yolov3.png}
+  \caption{YOLOv3 architecture}
+\end{figure}
+
+Anchors size and aspect ratios are learned by running k-means clustering on ground-truth boxes on a specific dataset.
+We use anchor because we want to start as close as possible to a good solution.
+The produced anchors are similar on different datasets.
+
+\subsubsection{Retina Net}
+
+Retina Net is a plain one-stage detector built on top of standard ResNets with FPN.
+Classification and regression heads are stacks of $3\times 3$ convolutions and do not share parameters (which is the main difference with RPN) as they are solving tasks which require different representations.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{./img/retina_net.jpg}
+  \caption{Retina Net architecture}
+\end{figure}
+
+\paragraph{The problem of class imbalance}
+Object detection is an imbalanced problem: the number of negative boxes far outweighs the number of objects in a typical image.
+This imbalance causes two problems:
+\begin{enumerate}
+  \item The "easy negatives" can overwhelm training and lead to suboptimal models, which are less effective at discriminating between negative and positive examples.
+  \item Training is inefficient as most locations in a randomly sampled mini-batch are "easy negatives" (negatives with low objectness score) that contribute no useful learning signal.
+\end{enumerate}
+
+Two stage classifiers partially and naturally solve these problems, because they implicitly sample "hard negatives" by training only on the top scored proposals, which are more likely to contain hard-to-discriminate regions.
+
+One-stage detectors, instead, are trained on the full set of anchors and, if negative samples are randomly selected, a mini-batch will on average contain most, if not all, easy negatives.
+
+Retina Net proposes to work at the loss level.
+Let's consider for simplicity a binary classification problem; the usual Cross Entropy loss in the binary case is:
+$$\mathcal{L} = -(y \times \ln(p) + (1-y) \times \ln(1-p))$$
+
+$$BCE(p, y) = \left\{ \begin{array}{rcl}
+  - \ln(p) & \mbox{if } y = 1 \\
+  - \ln(1-p) & \mbox{otherwise}
+\end{array}\right.$$
+Where $p$ is the probability assigned by the model to have label $y=1$.
+
+We can do a variable change $-\ln(p) \rightarrow p$.
+For notational convenience, we can define the probability of the true class as:
+$$p_t = \left\{ \begin{array}{rcl}
+  - p & \mbox{if } y = 1 \\
+  - 1-p & \mbox{otherwise}
+\end{array}\right.$$
+And rewrite $BCE(p,y) = BCE(p_t) = -\ln(p_t)$
+
+\paragraph{Focal Loss and Retina Net}
+The standard CE loss has a non-trivial magnitude even when examples are correctly classified, i.e. when $p_t >> 0.5$, which are the easy examples.
+When summed over lots of easy examples of the negative class, these small loss values can overwhelm the rarer hard negative examples.
+To down-weigh easy examples, we can use the (binary) focal loss $BFL(p_t) = -(1-p_t)^\gamma \ln p_t$.
+Where $\gamma$ is a tunable focusing hyper parameter (which is usually left to 2, with $\gamma = 0$ we would have the binary crossentropy).
+
+If the model training is going good, the loss is small but most of the loss is on the easy negatives.
+$\gamma$ helps to keep the loss dominated by the hard targets to classify.
+For example, with $\gamma = 2$:
+\begin{itemize}
+  \item $p_t = 0.9$ then $(1-p_t)^2 = (0.1)^2 = 0.01 = \frac{1}{100}$. The Focal Loss is $\times 100$ smaller than Cross Entropy loss, so when we are highly confident and doing good predictions the loss is weighted down.
+  \item $p_t = 0.6$ then $(1-p_t)^2 = (0.4)^2 = 0.16 = \frac{1}{6}$.
+  \item $p_t = 0.1$ then $(1-p_t)^2 = (0.9)^2 = 0.81 = \frac{4}{5}$. The FL is similar to CE loss.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{./img/focal_loss.jpg}
+  \caption{Focal Loss}
+\end{figure}
+
+\paragraph{Class weights}
+Imbalanced classes are usually handled by class weights.
+Class weights serve a complementary purpose with respect to the focal loss: class weights balance the relative importance of errors in the positive or negative class; focal loss lets the training focus on hard example within each class.
+
+In Retina Net we use both class weights and focal loss to have a better training.
+
+\subsubsection{Multi-label classification}
+In YOLOv3 the assignment of the class to the box is treated as a multi-label classification problem, instead of a multi class problem: each detected box can have from 1 to $C$ classes, which are not assumed to be mutually exclusive.
+Hence, given the scores predicted by the classification head, YOLOv3 does not use a softmax function to compute one probability function over the set of classes, but $C$ independent sigmoids, to compute the probability of the box belonging to each class independently.
+
+The classification box then becomes the sum of $C$ binary cross entropy terms.
+Therefore, we don't need to add a background class, since it's represented by a ground-truth vector of 0s, and it's detected at test time when all classification scores are below the detection threshold.
+
+\subsubsection{CenterNet}
+Anchors-based detectors, either two or one stage ones, have some limits:
+\begin{itemize}
+  \item Anchors are a brute force approach to detection: we are enumerating a subset of all possible boxes, which is very inefficient.
+  Moreover, the more anchors the better, but it's not clear what the best way to use a subset is.
+  \item We obtain a lot of duplicated entries for an object, which must be post-processed with NMS, so the detector is in practice not end-to-end differentiable.
+  \item Assignment of anchors to ground truths for training is based on manually selected thresholds and hand-crafted rules.
+\end{itemize}
+
+To overcome these limits, CenterNet proposed to represent objects as points (which is also the name of the paper which introduced the network), and regress their size or other properties.
+It's like the keypoints in Difference of Gaussians, but at a higher level, since the keypoints should be the center of my object.
+
+Given an image of size $3 \times H \times W$, the aim of the network is to produce a heatmap $\hat{Y}$ with values $\in [0,1]$ and size $C \times \frac{H}{R} \times \frac{W}{R}$ with output stride $R$.
+To recover the discretization error caused by the output stride, the network also predicts an offset for each center point.
+Finally, it also predicts the bounding box size $\hat{S}$ of size $2 \times \frac{H}{R} \times \frac{W}{R}$.
+
+The backbone used to produce the convolutional features are fully convolutional encoder-decoder architectures devised for keypoint detection or semantic segmentation.
+All the 3 outputs are predicted from the last activation with a dedicated head.
+
+Each ground truth keypoint (object center) $p = (x_p, y_p)$ of class $c$, is projected in the lower-resolution output heatmap $\tilde{p} = \lfloor \frac{p}{R} \rfloor$.
+Then, the target heatmap for its class $Y_C$ is set to 1 at $\tilde{p}$ and updated with an unnormalized Gaussian kernel.
+Points can be seen as a special case of anchor: a single, shape-agnostic, anchor.
+Detection is performed by finding local maxima in a heatmap, with one box per object (so without using NMS), and based solely on location, not box overlap.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{./img/centernet.jpg}
+  \caption{At inference time, given a spatial local maxima in the channel $\hat{Y_C}$ at position $(x^m, y^m)$, the box centered at $(x^m + \delta x^m, x^m + \delta y^m)$ of size $(w^m, h^m)$ and class $c$ is detected, without any further post-processing.}
+\end{figure}
+
+
+\subsection{Image segmentation}
+In image segmentation we need to do per-pixel labelling, which is a costly task, since the input is the RGB image of size $W\times H$ and the output is \textbf{a category $c_{uv}$ for each pixel $p=(u,v)$}.
+With $c_{u,v} \in [1,... ,C]$ which is a fixed list of categories.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/segmentation_task.jpg}
+  \caption{On the right there is the output of the image segmentation task}
+\end{figure}
+
+We can try to use synthetic data to harvest the labels, i.e. with a videogame engine, where we exactly know what the objects are and where they are on the screen.
+But this has the problem of domain shift (we can't learn to do segmentation on GTA V and then try to apply the same network on the real world).
+
+\subsubsection{Generalized IoU and other measures}
+The intersection over union can be generalized to segmentation masks by counting the pixels.
+For a class $c = 1, ..., C$ we can define the Intersection over Union for the class as $IoU_C = \frac{\text{area of intersection}}{\text{area of union}}$.
+To compute the mean IoU score for a dataset, we average $IoU_C$ over classes.
+$mIoU = \frac{1}{C} \sum_{C=1}^{C} IoU_C$.
+
+The $mIoU$ is the main measure to rank semantic segmentation algorithms.
+Other measures are:
+\begin{itemize}
+  \item Pixel accuracy: the fraction of pixels correctly classified $\frac{\sum_{C} TP_C}{\text{\# pixels in the dataset}}$. This has the problem of being biased towards the largest object.
+  \item Mean accuracy: the average of the accuracy for each class $\frac{1}{C} \sum_{C} \frac{TP_C}{\text{\# pixels of class }C \text{ in the dataset}}$.
+  \item Frequency weighted IoU: weighted average of $IoU_C$ for each class, with weights given by the frequency of a class in the dataset $\sum_{C} \frac{\text{\# pixels of class }C}{\text{\# pixels in the dataset}} IoU_C$.
+\end{itemize}
+
+\subsubsection{Slow R-CNN for segmentation}
+We can apply the same ideas used in R-CNN: we slide the window at all possible positions.
+There are no proposals, since we must process each pixel, which is even slower than R-CNN for detection.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/slow_rcnn_segmentation.jpg}
+  \caption{Network architecture for Slow R-CNN for segmentation}
+\end{figure}
+
+As the loss we use the sum of the standard multi-class loss over all pixels:
+$$L(\theta, x^{(i)}, y^{(i)}) = \sum_{u,v} CE\left(\text{softmax}(scores_{u,v}), \mathbf{1}(c_{u,v})\right)$$
+With $\mathbf{1}$ which is the one-hot encoded ground truth class label for the pixel $(u,v)$.
+
+The idea is that, as we did for detection, we can use a convolutional feature extractor and process the image through a CNN to get some activations and from that compute our output.
+We have to go from the activations of the extractor to an output that has as many channels as the number of classes and the same resolution as the input.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/fcn_segmentation.jpg}
+  \caption{We have to go from 512 channels to 21 channels with a $1\times 1$ conv. We have to go from a resolution of $6 \times 8$ to the original resolution of $256 \times 320$.}
+\end{figure}
+
+One way to perform the upsampling can be to use standard, not-learned, image processing operators (like bilinear interpolation).
+
+\subsubsection{FCN-32s}
+The FCN-32s (Fully Convolutional Network) is built on top of a CNN backbone.
+It uses the deepest feature map of the CNN, and then applies a $1\times 1$ convolution to reduce the number of channels to the number of classes.
+Then the network uses a single upsampling step by a factor of 32 (hence the name 32s) to bring it back to the input image size.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/fcn32.jpg}
+  \caption{Network architecture for FCN-32s}
+\end{figure}
+
+The problem is that without learning a non-linear upsampling transformation, we can only uniformly spread the coarse information in the final convolutional activation, obtaining very coarse masks.
+The solution is to upsample multiple activations at different resolutions (like with FPN).
+
+\subsubsection{FCN-16s}
+The FCN-16s adds additional connections between the output and the internal layers, which are referred to as skips.
+This results to better spatial detail, with more accurate segmentation than FCN-32s.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/fcn16.png}
+  \caption{Network architecture for FCN-16s}
+\end{figure}
+
+\subsubsection{FCN-8s}
+In the FCN-8s we can consider one more intermediate layer (2 skip connections) with respect to the FCN-16s.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/fcn8.png}
+  \caption{Network architecture for FCN-8s}
+\end{figure}
+
+With the VGG backbone, no more improvements were found after predicting from stride 8 activations (2 skip connections).
+
+% \subsubsection{Transposed convoltuions}
+
+% Convolutions with a stride bigger than 1 are a form of learnable downsampling.
+% Can we invert them to have learnable upsampling?
+
+% \begin{figure}[htbp]
+%   \centering
+%   \includegraphics[width=0.7\linewidth]{./img/fractional_conv.png}
+%   \caption{Fractionally strided convolutions move the kernel on the input at a lower pace than with stride 1}
+%   \label{fig:fractional_conv}
+% \end{figure}
+
+% Fractionally strided convolutions move slower than standard convolutions.
+% We achieve this by introducing zeros in the feature map.
+% Now we can get an output which is bigger than the input, like in the example in the image \ref{fig:fractional_conv} where we get a $5\times 5$ output from a $3\times 3$ input.
+% But this is not what happens in reality, because we use transposed convolutions.
+
+% Transposed convolutions can be realized without expanding the output.
+% A transposed convolution with stride 2 (which corresponds to a fractionally strided convolution with stride $\frac{1}{2}$) can be realized by moving the kernel on the output by 2 pixels for each pixel in the input and reweighting it by the input pixel.
+
+% The idea with transposed convolutions is to train the kernel to create a bigger feature map (upsampling).
+% By sliding the kernel on the remaining input pixels we can recover the same output image we obtained with fractionally strided convolutions.
+
+% \begin{figure}[htbp]
+%   \centering
+%   \includegraphics[width=0.7\linewidth]{./img/transposed_conv.jpg}
+%   \caption{After the first convolution calculation, of $1 \times$ the convolutional kernel, the kernel moves of 2 positions in the output image, and where there is overlap the pixels get summed}
+% \end{figure}
+
+% Transposed convolutions are referred to also with the name of upconvolutions or fractionally strided convolutions.
+% Their use may generate checkboard artifacts in the output for generative tasks, but they don't really affect our segmentation task.
+
+\subsubsection{Transposed Convolutions}
+
+Standard convolutions with stride \(s>1\) perform learnable downsampling by skipping \(s-1\) input positions between successive kernel applications. To invert this process and learn upsampling, we can use \emph{transposed convolutions}, sometimes also called \emph{fractionally strided convolutions} or \emph{upconvolutions}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/fractional_conv.png}
+  \caption{Inserting zeros between input pixels (fractional stride) yields a larger feature map before convolution.}
+  \label{fig:fractional_conv}
+\end{figure}
+
+Conceptually, one can imagine upsampling by first “expanding” the input: we insert \(s-1\) zeros between each pair of original pixels (both horizontally and vertically), producing a larger intermediate grid, and then apply a standard convolution with stride~1. For example, inserting zeros around a \(3\times3\) input and convolving with a \(3\times3\) kernel can produce a \(5\times5\) output (Figure~\ref{fig:fractional_conv}).
+
+Rather than explicitly inserting zeros, a transposed convolution implements the same computation by \emph{moving the kernel over the output grid}.  With stride \(s\), the kernel is shifted by \(s\) positions on the output for each move of one position on the input.  Each input pixel “casts” a weighted patch (given by the kernel) onto the output grid, and overlapping patches are summed.  This reconstructs exactly the same enlarged feature map as the zero-insertion view, but in a single learnable layer.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/transposed_conv.jpg}
+  \caption{Each input pixel is multiplied by the kernel and “sprayed” onto the output grid with stride~2; overlaps sum to form the final activation.}
+\end{figure}
+
+By learning the kernel weights, transposed convolutions perform upsampling in a way that can adapt to the data.  They are widely used in generative and segmentation architectures to increase spatial resolution.  While they can introduce checkerboard artifacts in some settings, these artifacts are usually not problematic in well-designed segmentation networks.
+
+\subsubsection{U-net}
+
+U-net was one of the first networks used for segmentation.
+They used transposed convolutions to do upsampling, and skip connections which combine features from the encoder to features from the decoder.
+Skip connections use concatenation instead of summation.
+The encoder compresses in a semantically rich representation the input, and the decoder takes the latent representation and goes back to either the original input or a segmentation map.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/unet.jpg}
+  \caption{The U-net network architecture.}
+\end{figure}
+
+The operations are mainly three:
+\begin{itemize}
+  \item convolutions between features of the same dimensions.
+  \item downsampling with pooling.
+  \item upsampling with transposed convolutions.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/unet_zoom.png}
+  \caption{A zoom of the U-net middle layers}
+\end{figure}
+
+\subsubsection{Dilated convolutions}
+
+This semantically rich feature map at a certain stage comes from the fact that a position in a feature map collects a lot of spatial information in the channel through the concept of receptive field.
+The problem of previous stages being less semantically rich comes from their receptive field, because they consider less information.
+The idea of dilated convolutions is to try to address the issue at a different layer enlarging the receptive field without touching the computation.
+The idea was introduced with the concept of dilated convolutions.
+Dilated convolutions consider a large receptive field by taking positions far away from the center and putting zeros in between.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/dilated_convolutions.jpg}
+  \caption{A simple $3 \times 3$ kernel has a dilation factor of 1. A dilation rate of 2 means that i introduced a layer of zeros in the feature map.}
+\end{figure}
+
+We recall that Resnet in each stage has combination of blocks that perform convolutions with batch normalization.
+The first layer of each stage of Resnet lowers the resolution with striding and doubles the channel.
+Instead of using striding they kept the same striding but changed the dilation rate.
+Within the same stage now the blocks don't change resolution (same striding).
+If we don't halve the resolution we are doing a lot more computation with lots of more channels.
+Also, the output feature map is bigger because we have no striding.
+But this is good, since we are doing segmentation and need more semantic information.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/dilated_resnet.jpg}
+  \caption{Normal Resnet vs the one with dilated convolutions}
+\end{figure}
+
+They applied this at different stages of the Resnet backbone, to increase the receptive field.
+This uses much more memory but has the same computational cost.
+
+If we modify all the stages with dilated convolutions this becomes too costly since we aren't modifying the input size.
+While the operation we perform is constant the size of the channel still doubles.
+
+\subsubsection{DeepLab}
+
+
+ResNet with dilated convolutions are the backbones used in DeepLab, the reference model for semantic segmentation, to control the resolution of the output feature map.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/deeplab.jpg}
+  \caption{Deeplab v3 network architecture}
+\end{figure}
+
+To handle the problem of the existence of objects at multiple scales, DeepLab introduces a block of operations known as spatial pyramid pooling based on dilated convolutions.
+
+This combination of operations took inspiration from a concept known as spatial pyramid pooling from DeepLab v2.
+Spatial Pyramid Pooling can be seen as an extension of global average pooling that preserves spatial information.
+DeepLab emulates the property of the Spatial Pyramid Pooling layer to capture spatial context at multiple scales by leveraging again atrous convolutions.
+In DeepLab v2, the module performs $3 \times 3$ convolutions with increasing dilation rates.
+Outputs are concatenated and aggregated by a scoring $1\times 1$ convoltuion to produce the output scores map (we can do this because we are not changing the resolution).
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/deeplab_v2.png}
+  \caption{Deeplab v2 network architecture}
+\end{figure}
+
+When the dilation rate grows, the number of positions where all the 9 weights of the kernel are used shrinks.
+It was discovered that a dilation rate of 24 was too big, since only one weight was used, so it was removed.
+
+They also added a context feature in DeepLab v3, so they took all the whole feature map and applied global average pooling.
+
+\subsubsection{Instance segmentation}
+Semantic segmentation separates different classes at the pixel level, but doesn't separate different instances of the same class.
+Object detection separates instances but provides only a crude approximation of the instance shape (the bounding box).
+The task of instance segmentation lays at the intersection of the two. It can be defined as the task of:
+\begin{enumerate}
+  \item Detecting all instances of the objects of interest in an image and classifying them
+  \item Segmenting them from the background at the pixel level.
+\end{enumerate}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/instance_segmentation.jpg}
+  \caption{difference between object detection, instance segmentation and semantic segmentation.}
+\end{figure}
+
+\subsubsection{Mask R-CNN}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/mask_rcnn.png}
+  \caption{Mask R-CNN network architecture}
+\end{figure}
+
+Mask R-CNN modifies Faster R-CNN, which is a 2 stage detector, by adding a convolutional network called Mask FCN which does segmentation on the proposed region.
+Another change is the RoI align instead of the RoI pool.
+Remember that feature maps are spatially continuous, but RoIs have floating-point coordinates after scaling, and we need to align them to the grid.
+The RoI align doesn't snap the RoI to the grid, but it divides into equally sized subregions, it samples feature values at a regular grid of points within each RoI cell with bilinear interpolation, and it pools samples feature values in each sub-region.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/roi_align.png}
+  \caption{RoI align}
+\end{figure}
+
+\subsection{Metric Learning}
+
+By removing the classification head of an image classification network we can compute a low-dimesnional representation (a low dimensional embedding) of the input images.
+Performing nearest neighbor search on such embedding vectors is very effective: we get semantically similar images as neighbors.
+
+\subsubsection{Face recognition}
+Given a query face face recognition is a one to many matching problem.
+A database of faces can have millions of identities, but few images per subject.
+A match msust be robust to facial expression, changed hair style, aging, glasses, scarfs\dots
+
+We can't just train a classification network for face images.
+If we take imagenet as an example, which has 1000 classes and 1.4 M images, we would need 1.4 B images to train if we want to distinguish between 1 M different faces.
+Face recognition is also an open-world problem, since we could want to add or remove an user.
+But this requires to throw away the last layer (since we change the output dimension by adding/removing people) and re-train the full network.
+
+The idea is to use transfer learning, which is based on reusing the representation learned once on a reasonably large dataset as feature extractor with a $k-$NN classifier on the embedding to tackle face recognition.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/face_recognition.jpg}
+  \caption{To change the number of images we want to recognize we also have to change the embedding size}
+\end{figure}
+
+\paragraph{Classification embeddings}
+The cross-entropy loss used in classification guides the network to learn high-level and semantically rich embeddings.
+However, they are an intermediate representation used to classify correctly the input image with the subsequent fully connected linear layer.
+
+In the embedding space the classes are linearly separable.
+Distances between elements of the same class can be arbitrarily large, and distances between elements of different classes can be arbitrarily small.
+This is not a great space in which perform nearest neighbor search, since a point can be closer to lots of points of the other classes and not to the ones of the same class.
+
+\subsubsection{Face verification}
+A closely related problem to face recognition is: given two images, confirm that they depict the same person.
+This is usually solved by learning a similarity function between images and a threshold.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/face_verification.jpg}
+  \caption{The distance between the images must be under the threshold}
+\end{figure}
+
+\subsubsection{Metric Learning}
+The idea of metric learning, or similarity learning, is to use a specific loss at training time to guide the feature extractor to favor a clustered structure of the embedding such that:
+\begin{enumerate}
+  \item The distance between faces of the same person (the intra-class distance) is minimized.
+  \item The distance between faces of different persons (the inter-class distance) is maximized.
+\end{enumerate}
+
+We have to learn discriminative embeddings:
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/metric_learning.jpg}
+  \caption{The key concept of metric learning}
+\end{figure}
+
+\subsubsection{Siamese network training}
+A siamese network learns to compare two inputs.
+It consists in two identical subnetworks (with the same architecture and shared weights) that process two different inputs and then compare their outputs to determine how similar or different the inputs are.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/siamese_network.png}
+  \caption{Siamese network architecture}
+\end{figure}
+
+The goal is to compute a loss that depends on two input examples.
+The embeddings are compared using a loss function $L(f(x^{(i)}), f(x^{(j)}))$.
+
+After producing this embedding space, we can pass a new test image through the network, and then apply a $k-$NN classifier on the embedding space.
+By doing this, adding new identities is easy, since the embedding space doesn't have to be changed.
+
+\paragraph{Contrastive loss}
+
+Treating face verification as classification may not generalize well in open-world problems.
+A loss enforcing directly a clustered embedding structure should:
+\begin{itemize}
+  \item make $d(x^{(i)}, x^{(j)})$ small, if $x^{(i)}$ and $x^{(j)}$ depict the same person.
+  \item make $d(x^{(i)}, x^{(j)})$ large, if $x^{(i)}$ and $x^{(j)}$ depict two different persons.
+\end{itemize}
+
+If the Euclidean norm is used $d(x^{(i)}, x^{(j)}) = \|f(x^{(i)}) - f(x^{(j)})\|_2$ a simple loss that capture both requirements is:
+$$
+L\left(f(x^{(i)}), f(x^{(j)})\right) = 
+\begin{cases}
+\|f(x^{(i)}) - f(x^{(j)})\|_2^2 & \text{if } y^{(i,j)} = +1 \\
+-\|f(x^{(i)}) - f(x^{(j)})\|_2^2 & \text{if } y^{(i,j)} = 0
+\end{cases}
+$$
+
+We can note that the first term is bounded from below at 0, but the second one is unbounded (the clusters can be infinitely different).
+There is practically no gain in pushing clusters further away when they are already far "enough".
+
+A formulation less prone to overfitting uses a margin $m$ to stop pushing clusters of different classes apart from each other, i.e.
+$$
+L\left(f(x^{(i)}), f(x^{(j)})\right) = 
+\begin{cases}
+\|f(x^{(i)}) - f(x^{(j)})\|_2^2 & \text{if } y^{(i,j)} = +1 \\
+\max (0, m - \|f(x^{(i)}) - f(x^{(j)})\|_2^2 \,) & \text{if } y^{(i,j)} = 0
+\end{cases}
+$$
+
+\paragraph{Triplet loss}
+
+To obtain an effective embedding, we must make embedding vectors similar for the same person, and different for different persons.
+And we must satisfy both conditions at once.
+
+The contrastive loss achieves this effect indirectly, by reasoning on every pair in the triplet of images.
+The triplet loss, instead, optimizes the embedding to better fulfil both requirements at once.
+$$\| f(P) - f(A) \|_2^2 < \| f(N) - f(A) \|_2^2$$
+
+But the triplet loss isn't robust, since it doesn't guarantee that inter-class distances are large.
+It also risks training collapse: if the embedding is a constant value (e.g. all 0s) the criteria is satisfied.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{./img/triplet_loss.png}
+  \caption{Triplet loss}
+\end{figure}
+
+As we can see, the distance between the green and the red dot is smaller than the distance between the green and the blue one.
+But the blue and the green one should be closer.
+With a margin, triplet loss learns to rank.
+
+$$\| f(P) - f(A) \|_2^2 + m < \| f(N) - f(A) \|_2^2$$
+
+It doesn't impose all the pictures of the same person to collapse in a point, hence it may be easier to learn than contrastive loss.
+
+The most important part in training embeddings with the triplet loss it to effectively form the triplets, because the choice of negative examples is key.
+For most triplets, the constraint $\| f(P) - f(A) \|_2^2 + m < \| f(N) - f(A) \|_2^2$ will be already satisfied.
+We want to compute the loss only on triplets which will contribute to learning.
+
+Hence, a large mini-batch of $B$ samples is formed by picking a fixed number of images for $D$ identities, to ensure that a significant representation of the anchor-positive distance can be formed, and randomly sampled negatives are added to complete the batch.
+We have:
+\begin{itemize}
+  \item Hard triplets: triplets where the negative is closer to the anchor than the positive
+  \item Semi hard triplets: triplets where the negative is not closer to the anchor than the positive, but which still have positive loss.
+\end{itemize}
+
+Semi-hard negatives are the best to train on.
+To do semi-hard negative mining, at the beginning of each epoch:
+\begin{itemize}
+  \item Compute all the embeddings on the training set (using the network trained so far).
+  \item Create all the possible (anchors, positive) pairs for each identity.
+  \item Create a triplet for each semi-hard negative $N$ if $\| f(P) - f(A) \|_2^2 < \| f(N) - f(A) \|_2^2 < \| f(P) - f(A) \|_2^2 + m$ (a negative example that is within the margin).
+\end{itemize}
+
+We don't select the hardest negatives (the ones where $\| f(P) - f(A) \|_2^2 > \| f(N) - f(A) \|_2^2$) because it was found to lead to poor training, probably because then training is domintaed by mislabeled or poorly imaged faces.
+
