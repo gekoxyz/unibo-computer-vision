@@ -30,9 +30,9 @@ We compute: $W^{[l+1]} = W^{[l]} - \alpha v_{W^{[l + 1]}}$, where $v_{W^{[l + 1]
 Root Mean Square Propagation (RMSprop) uses an exponentially decaying average to discard history from the extreme past so that it doesn't impede the convergence.
 
 \paragraph{Optimizers: Adam}
-The name derives from "adaptive moments", and it can be seen as the combination of RMSprop and momentum.
+The name derives from "adaptive momentum", and it can be seen as the combination of RMSprop and momentum.
 It's fairly robust to the choice of hyperparameters, though the learning rate sometimes needs to be changed from the suggested default.
-There is a first order and a seond order Adam.
+There is a first order and a second order Adam.
 The first order Adam uses the gradient and its moving averages (first moments) to update the parameters.
 The second order Adam incorporates information about the curvature of the loss surface, using approximations of the Hessian or second order derivatives, which leads to more informed and potentially more efficient updates but requires more computational resources.
 
@@ -46,7 +46,7 @@ An image is characterized by height, width and number of channels.
   % \label{fig:forward_mapping}
 \end{figure}
 
-We can also train more than one filer, where each filter outputs a feature map.
+We can also train more than one filter, where each filter outputs a feature map.
 By stacking activation maps we get a new volume.
 
 Since convolutions shrink the images we can use padding to preserve the edges.
@@ -65,7 +65,7 @@ It's applied to each activation map independently.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/pooling.jpg}
+  \includegraphics[width=0.6\linewidth]{./img/pooling.jpg}
   \caption{Example: pooling of dimension 2 and stride 2.}
 \end{figure}
 
@@ -78,8 +78,8 @@ We go from spatial to semantic information (we transform spatial information to 
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/convolutions_flops.jpg}
-  \caption{}
+  \includegraphics[width=0.6\linewidth]{./img/convolutions_flops.jpg}
+%   \caption{}
   \label{fig:convolutions_flops}
 \end{figure}
 
@@ -87,14 +87,14 @@ As we can see in \ref{fig:convolutions_flops}, the number of learnable parametes
 The size of the output is $H_\text{{out}} = W_\text{{out}} = 32 - 5 + 2 * 2 + 1 = 32$.
 Hence, there are $6 \times 32 \times 32 = 6144$ values in the output activation ($\approxeq 24$KB).
 
-Since each of them is obtained as the dot product between the weights and the input, which requires to perform $n$ multiplications and $n$ summations for inputs of size $n$, i.e. $2n$ flops.
+Each of them is obtained as the dot product between the weights and the input, which requires to perform $n$ multiplications and $n$ summations for inputs of size $n$, i.e. $2n$ flops.
 
 \subsubsection{Batch Normalization (BatchNorm)}
 BatchNorm is a technique designed to stabilize and accelerate the training of deep neural networks by addressing internal covariate shift: the change in the distribution of layer activations caused by updates to preceding layers during training.
 By normalizing activations at each layer, BatchNorm ensures that gradients are propagated more effectively, enabling coordinated updates across deep networks.
 
 Let $Z^{[l]}$ be a minibatch of activations of the $l$-th layer to be normalized.
-To normalize $Z^{[l]}$, we replace it with: $Z^{[l]}_{norm} = \frac{Z^[l] - \mu}{\sigma}$, where $\mu$ is a vector containing the mean of each unit and $\sigma$ is a vector containing the mean of each unit and $\sigma$ is a vector containing the standard deviation of each unit.
+To normalize $Z^{[l]}$, we replace it with: $Z^{[l]}_{norm} = \frac{Z^{[l]} - \mu}{\sigma}$, where $\mu$ is a vector containing the mean of each unit and $\sigma$ is a vector containing the standard deviation of each unit.
 $\mu$ and $\sigma$ are running averages of the values seen during training.
 BatchNorm helps with speeding up the training, and has a slight regularization effect (but we don't use it for this reason).
 
@@ -108,7 +108,7 @@ This helps to prevent overfitting because we don't associate a certain pattern t
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/dropout.jpg}
+  \includegraphics[width=0.6\linewidth]{./img/dropout.jpg}
   \caption{Each layer has a $50 \%$ dropout probability}
   \label{fig:dropout}
 \end{figure}
@@ -130,7 +130,7 @@ It's gray because we subtract the mean from this pictures, and so the number in 
 \subsection{CNNs}
 
 \subsubsection{AlexNet \& ZFnet}
-In 2012 Alex Krizhevsky proposed AlexNet, which had almost a $9\%$ of improvement on SOTA.
+In 2012 Alex Krizhevsky proposed AlexNet, which had almost a $9\%$ of improvement on SOTA for image classification.
 
 \begin{figure}[htbp]
   \centering
@@ -139,37 +139,34 @@ In 2012 Alex Krizhevsky proposed AlexNet, which had almost a $9\%$ of improvemen
   \label{fig:alexnet}
 \end{figure}
 
-In the image \ref{fig:alexnet}, we see only one half of the network, since the architecture is replicated identically 2 times to be used on a 2 GPU setup.
-The network is composed by a \textbf{stem layer} at the beginning, which is a convolution layer that performs a fast reduction in the spatial size of the activations, mainly to reduce memory and computational cost.
-The first layer has two $11 \times 11$ kernels, which extracts corners/edges/blobs.
+In figure \ref{fig:alexnet}, only one half of the network is shown, as the architecture is replicated identically for a 2-GPU setup.
 
-To counteract these problems ZFnet used $7\times 7$ convolutions with stride 2 in the first layer and $5\times 5$ convolutions with stride 2 also in the second convolutional layer.
+The network begins with a \textbf{stem layer}, which is a convolutional layer that quickly reduces the spatial dimensions of the activations to lower memory and computational requirements.
+The first layer uses two $11 \times 11$ kernels to extract features such as corners, edges, and blobs.
+
+However, this design had limitations: the large kernel size ($11 \times 11$) and stride (4) in the first layer caused a significant \textbf{loss of spatial information} early in the network, making it harder to capture fine-grained features.
+
+To address these issues, ZFNet replaced the initial $11 \times 11$ convolutions with $7 \times 7$ convolutions with stride 2 in the first layer, and $5 \times 5$ convolutions with stride 2 in the second layer.
 
 \subsubsection{VGG}
-To avoid the vanishing gradient problem VGG used $3 \times 3$ convolutions only, and didn't use the stem layer.
-The network was shallower, and used only convolutions and pooling.
-At the end it used the same flattening and classification head.
-
-Pre initialization with weights from shallower architectures was crucial to let the training progress, since batch normalization wasn't yet invented.
+The VGG network architecture is characterized by its simplicity and depth, achieved by exclusively using small $3 \times 3$ convolutional filters and omitting a distinct 'stem' layer. The core structure consists of repeated blocks of convolution and pooling layers, followed by a standard flattening layer and a classification head. Training such deep networks presented challenges, including the vanishing gradient problem. As batch normalization was not yet available during VGG's development, pre-initializing network weights from shallower, pre-trained architectures was a crucial technique for enabling effective training.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.35\linewidth]{./img/vgg.jpg}
-  \caption{VGG architecture}
-  % \label{fig:alexnet}
+  \includegraphics[width=0.45\linewidth]{./img/vgg.jpg}
+  \caption{VGG network architecture}
 \end{figure}
 
-VGG introduces the idea of designing a network as repetition of stages, i.e. a fixed combination of layers that process activations at the same spatial resolution.
-In VGG we have 3 types of blocks:
+VGG introduced a modular design principle based on repeating stages. Each stage consists of a fixed sequence of layers that process activations while maintaining the same spatial resolution within that stage. VGG employs three main types of such repeating blocks:
 \begin{itemize}
   \item \verb|conv-conv-pool|.
   \item \verb|conv-conv-conv-pool|.
   \item \verb|conv-conv-conv-conv-pool| (we can get a more complex convolution by combining $3\times 3$ convolutions).
 \end{itemize}
 
-One stage has the same receptive field of larger convolutions but requires less parameters and computation, and introduces more non-linearities.
+The use of stacked $3 \times 3$ convolutions within a stage, as detailed in the table below, provides an effective receptive field comparable to that of a single larger convolution (e.g., a $5 \times 5$ filter). However, this approach requires fewer parameters and less computation while also introducing more non-linear activation functions (ReLUs).
 
-The disadvantage is that the memory for activation doubles.
+A notable trade-off, also highlighted in the table, is the increased memory required for storing activations when using stacked $3 \times 3$ convolutions compared to a single larger filter.
 
 \begin{table}[htbp]
 \begin{tabular}{|l|l|l|l|l|}
@@ -180,12 +177,10 @@ $C \times C \times 5 \times 5, \,S=1,\, P=2$           & $25C^2 + C$  & $50C^2 W
 \end{tabular}
 \end{table}
 
-VGG-16 is composed by 138M parameters ($2.3x$ AlexNet), mostly in fully connected layers.
-The computational cost is $\approx 4$ Tflops, mainly due to convolutions, and the network uses about $\approx 16.5$ GB of memory.
+The VGG-16 model, for instance, comprises 138 million parameters (approximately 2.3 times that of AlexNet), a significant portion of which are in the fully connected layers. It demands considerable computational resources, around 4 TFLOPs, largely due to its convolutional operations, and requires approximately 16.5 GB of memory.
 
 \subsubsection{Inception v1 (GoogLeNet)}
-The main hallmark of this architecture is the improved utilization of the computing resources inside the network.
-This was achieved by a carefully crafted design that allows for increasing the depth and width of the network while keeping the computational budget constant.
+A key feature of this architecture is the efficient use of computational resources within the network. This is achieved through a carefully designed structure that allows for increased depth and width while maintaining a fixed computational budget.
 
 \begin{figure}[htbp]
   \centering
@@ -193,43 +188,38 @@ This was achieved by a carefully crafted design that allows for increasing the d
   \caption{GoogLeNet architecture}
 \end{figure}
 
-The network is composed by stem layers which shrink the image size, a stack of inception modules where a combination of different operations are combined, and a final classifier.
-There are 22 trainable layers and about 100 modules (the blue and red blocks).
+The network consists of stem layers that reduce the input size, a series of inception modules that combine various operations, and a final classifier. It includes 22 trainable layers and roughly 100 modules (represented by the blue and red blocks).
 
 \paragraph{Stem layers}
-Stem layers aggressively downsamples inputs: from 224 to 28 width/height in 5 layers.
-It brings it down a bit more gently than AlexNet.
-To reach $28\times 28$, VGG uses 10 layers.
+Stem layers downsample the input aggressively, from 224 to 28 pixels in width/height, within just 5 layers. This approach is slightly more gradual than in AlexNet. For comparison, VGG requires 10 layers to reach a spatial size of $28\times 28$.
 
 \paragraph{Naïve inception module}
-The main idea of the inception module is that it consists of multiple pooling and convolution operations with different sizes ($3\times 3$, $5\times 5$) in parallel, instead of using just one filter of a single size.
+The core idea of the inception module is to perform several pooling and convolution operations of different sizes (e.g., $3\times 3$, $5\times 5$) in parallel, rather than using a single type of filter.
+
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/inception_naive.jpg}
-  % \caption{}
+  \includegraphics[width=0.7\linewidth]{./img/inception_naive.jpg}
 \end{figure}
-However, there are two main problems:
+
+However, this design introduces two main issues:
 \begin{itemize}
-  \item Due to max-pool, the number of channels grows very fast when inception modules are stacked on top of each other.
-  \item $5 \times 5$ and $3 \times 3$ convolutions on many channels become prohibitively expensive if we stack a lot of them.
+  \item The use of max pooling causes the number of channels to grow rapidly when stacking inception modules.
+  \item Performing $3 \times 3$ and $5 \times 5$ convolutions on many channels becomes computationally expensive as the network deepens.
 \end{itemize}
 
 \paragraph{$1 \times 1$ convolutions and the inception module}
-To overcome the problems, we use $1 \times 1$ convolutions before feeding the data into $3\times 3$ or $5 \times 5$ convolutions.
-$1\times 1$ convolutions don't reason locally, but along the channel on a single dimension.
-They allow us to change the depth of the activations while preserving the spatial size.
-This is effectively a dimensionality reduction.
+To address these problems, $1 \times 1$ convolutions are applied before the $3\times 3$ and $5\times 5$ convolutions. These $1\times 1$ convolutions do not capture spatial relationships but operate across channels at each spatial location. They enable us to adjust the depth of activations while preserving spatial resolution, effectively serving as a form of dimensionality reduction.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/11conv.jpg}
+  \includegraphics[width=0.6\linewidth]{./img/11conv.jpg}
   \caption{$1 \times 1$ convolution}
 \end{figure}
 
-By adding $1\times 1$ convolutions before larger convs and after max pool we can:
+By introducing $1\times 1$ convolutions before the larger convolutions and after pooling, we can:
 \begin{itemize}
-  \item \textbf{Control the time complexity} of the larger convolutions by reducing the channel dimension.
-  \item \textbf{Control the number of output channels} by reducing the depth of the max pool output.
+  \item \textbf{Control time complexity} by reducing the number of channels processed by larger convolutions.
+  \item \textbf{Limit the output depth} of the max pooling layers by shrinking the channel dimension.
 \end{itemize}
 
 \begin{figure}[htbp]
@@ -239,109 +229,121 @@ By adding $1\times 1$ convolutions before larger convs and after max pool we can
   \label{fig:inception}
 \end{figure}
 
-In \ref{fig:inception} we can see how Google exploited the properties of $1\times 1$ convolutions to make an incpetion module without making the complexity explode.
-The idea is that we take our input, we shrink it by using $1\times 1$ convolutions, and then we apply the $5 \times 5$ and $3 \times 3$ spatial convolutions.
-We use $1\times 1$ convolutions \textbf{after} pooling to shrink the output (we don't need to compress before the operation but after it).
+In Figure~\ref{fig:inception}, we see how Google used $1\times 1$ convolutions to implement an inception module without incurring in excessive computational cost. The approach is to first reduce the number of channels with $1\times 1$ convolutions, then apply the $3 \times 3$ and $5 \times 5$ spatial convolutions. After pooling operations, another $1\times 1$ convolution reduces the output depth. We reduce dimensionality \textbf{after} pooling since compression isn't necessary beforehand.
 
 \paragraph{Fully-connected classifier vs global average pooling}
-As we have seen the last 3 fully connected layers were the heaviest, since we had very high dimensional spatial information.
-To reduce the number of parameters needed between convolutional features and fully connected layers we get rid of spatial dimensions by averaging them out, because the activations should contain high level information.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/fc_vs_gap.png}
+  \caption{Fully Connected Classifier vs Global Average Pooling}
+\end{figure}
+
+The final three fully connected layers typically account for a large portion of the parameters due to high-dimensional spatial inputs. To mitigate this, we eliminate the spatial dimensions by averaging across them. This is justified by the assumption that the final activations represent high-level semantic features.
 
 \subsubsection{Inception v3}
-Inception v3 leverages convolution factorizations to increase the computational efficiency and to reduce the number of parameters, the two main methods are:
+Inception v3 improves computational efficiency and reduces parameter count through convolutional factorization. The two main techniques are:
 \begin{itemize}
-  \item $3 \times 3$ followed by $3 \times 3$ instead of a $5 \times 5$ (VGG idea).
-  \item $3 \times 3$ can be factorized in a $3\times 1$ and $1 \times 3$.
+  \item Replacing a $5 \times 5$ convolution with two sequential $3 \times 3$ convolutions (as in VGG).
+  \item Factorizing a $3 \times 3$ convolution into a $3\times 1$ followed by a $1 \times 3$ convolution.
 \end{itemize}
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.8\linewidth]{./img/inception3.png}
-  \caption{Instead of always using the same inception layers, we use 3 different inception layers}
+  \caption{Inception v3 uses three different types of inception layers instead of a single repeated one}
 \end{figure}
 
 \subsubsection{Residual Networks (ResNet)}
-ResNet was invented to address the problem of vanishing gradients and degradation in very deep neural networks.
-The core innovation in ResNet is the residual block, which introduces skip connections.
-In traditional networks, each layer feeds directly into the next layer.
-In ResNet, the input to a layer is also added to its output, by creating what's called a skip connection (like an identity shortcut).
-This means that instead of learning a direct mapping $H(x)$, the network learns the residual function $F(x) = H(x) - x$.
+ResNet was designed to solve two major problems in deep neural networks: the vanishing gradient problem and degradation (when adding more layers actually makes performance worse). 
+
+The key idea behind ResNet is the \textbf{residual block}, which includes a \textbf{skip connection}. In standard networks, each layer passes its output directly to the next layer. In ResNet, the input to a layer is also added to its output:
+\[
+H(x) = F(x) + x
+\]
+This means the network learns the residual function $F(x) = H(x) - x$, which is easier to optimize.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/resnet.png}
+  \includegraphics[width=0.4\linewidth]{./img/resnet.png}
   \caption{The ResNet architecture}
 \end{figure}
 
-The network is a stack of stages with fixed design rules (inspired by VGG):
+ResNet architecture follows a structured pattern, inspired by VGG:
 \begin{itemize}
-  \item Stages are a stack of residual blocks.
-  \item Each residual block is a stack of two $3 \times 3$ convolutions with batch-norm.
-  \item The first block of each stage halves the spatial resolution (with stride 2 convolutions) and doubles the number of channels.
-  \item It uses stem layer and global average pooling as GoogLeNet.
+  \item Each \textbf{stage} is made up of multiple residual blocks.
+  \item Each residual block contains two $3 \times 3$ convolutional layers, each followed by batch normalization.
+  \item The first block of each stage reduces the spatial resolution (via stride 2) and doubles the number of channels.
+  \item The network starts with a stem layer and ends with global average pooling, like GoogLeNet.
 \end{itemize}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/resnet_skip.png}
-  % \caption{}
+  \includegraphics[width=0.4\linewidth]{./img/resnet_skip.png}
 \end{figure}
 
-ResNet is still the standard baseline for most tasks today.
+ResNet remains a standard baseline in many computer vision tasks.
 
-The residual blocks described so far \textbf{cannot be used as the first block of a new stage}, because the number of channels and the spatial dimensions do not match along the residual connection.
-The authors then decided to use a $1\times 1$ convolution with stride 2 and $2C$ output channels to expand the dimension of the channels.
+\paragraph{Handling dimension mismatch}
+Residual blocks cannot be directly used at the start of a new stage, since the number of channels and spatial resolution change. To handle this, ResNet uses a $1 \times 1$ convolution with stride 2 to match dimensions across the skip connection.
 
-\paragraph{Bottleneck residual block}
-A bottleneck residual block is a design used in very deep ResNets (e.g. ResNet-50, 101, 152) to enable training with more layers while maintaining computational efficiency.
+\paragraph{Bottleneck Residual Block}
+For deeper networks like ResNet-50/101/152, a \textbf{bottleneck block} is used to reduce computational cost. Instead of stacking two $3 \times 3$ convolutions, the bottleneck design compresses and then expands channels:
+\begin{itemize}
+  \item $1 \times 1$ conv to reduce dimensions from $4C$ to $C$
+  \item $3 \times 3$ conv processes $C$ channels
+  \item $1 \times 1$ conv expands back to $4C$
+\end{itemize}
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.8\linewidth]{./img/resnet_bottleneck.png}
-  \caption{Instead of working with $3 \times 3$ convolutions we go from $4C$ down to $C$ and then expand again}
+  \caption{Bottleneck residual block}
 \end{figure}
 
 \subsubsection{ResNeXt}
-Inception modules are effective multi-branch architectures, which can be thought of as following a split-transform-merge paradigm.
-ResNeXt is a simpler way to realize multiple pathways, since it decomposes each bottleneck residual block of ResNets into $G$ parallel branches.
-The number of branches (cardinality) is a new hyperparameter.
-Once $G$ is chosen, it is possible to obtain a $G \times d$ ResNeXt block with complexity similar to the original ResNet block.
-$d$ must be proportional to $C$.
-
-\paragraph{ResNeXt block as grouped convolutions}
-
-Grouped convolutions split input channels into $G$ independent groups.
-Each group processes a subset of channels, reducing computational cost and parameters while maintaining feature diversity.
+ResNeXt builds on ResNet but introduces a new dimension: \textbf{cardinality}, which is the number of parallel paths or groups.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/grouped_convolutions.jpg}
-  \caption{Grouped convolution with $G=2$}
+  \includegraphics[width=0.5\linewidth]{./img/resnext.png}
+  \caption{ResNeXt network architecture}
 \end{figure}
 
-An input with $C$ channels is divided into $G$ groups, each with $\frac{C}{G}$ channels.
-Each group has its own filters, producing $\frac{K}{G}$ output channels (for $K$ total filters).
-The outputs are concatenated, resulting in $K$ channels.
+Inspired by Inception modules (which split-transform-merge), ResNeXt uses multiple paths inside each residual block. Each block is split into $G$ branches (cardinality), and each branch learns part of the features.
 
-This is useful because it's more efficient and each group learns distinct features, enhancing model capacity.
+The ResNeXt block is a simplified and efficient version of multi-branch architecture.
 
-ResNeXt introduces cardinality (the number of groups of $G$) as a new dimension.
-It uses grouped convolutions to create parallel pathways within a residual block, improving feature learning without increasing depth/width.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.8\linewidth]{./img/resnext_grouped.jpg}
-  \caption{The ResNeXt block as grouped convolutions, on the left we have a normal convolutional block, in the middle we split to reduce computation and on the right we join again.}
-\end{figure}
-
-The structure of the ResNeXt block is:
+\paragraph{Grouped Convolutions}
+Each branch is implemented using \textbf{grouped convolutions}:
 \begin{itemize}
-  \item $1\times 1$ convolution to compress the input channels.
-  \item $3\times 3$ grouped convoltuion to process compressed features in $G$ parallel groups (cardinality). Each group applies transformations independently.
-  \item $1\times 1$ convolutions expands channels back.
-  \item skip connection adds the original input to the output (residual learning).
+  \item The input with $C$ channels is split into $G$ groups, each with $\frac{C}{G}$ channels.
+  \item Each group has separate filters, and processes data independently.
+  \item The outputs of all groups are concatenated, giving $K$ total channels (for $K$ filters).
 \end{itemize}
 
-ResNeXt is more efficient because there are fewer parameters than widening/deepening the network, and by increasing $G$ we can improve the performance without drastically increasing the compute.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/grouped_convolutions.jpg}
+  \caption{Grouped convolution in ResNeXt with $G=2$}
+\end{figure}
+
+\paragraph{Structure of a ResNeXt Block}
+\begin{itemize}
+  \item $1 \times 1$ convolution to reduce input channels.
+  \item $3 \times 3$ grouped convolution processes features in $G$ groups.
+  \item $1 \times 1$ convolution expands channels back.
+  \item Skip connection adds the original input.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\linewidth]{./img/resnext_grouped.jpg}
+  \caption{ResNeXt block with grouped convolutions: split, transform, merge.}
+\end{figure}
+
+\textbf{Why ResNeXt?}  
+It improves performance with fewer parameters and less computation than simply increasing network depth or width. Increasing cardinality $G$ enhances feature learning efficiency without a significant cost in resources.
 
 \subsubsection{Squeeze-and-Excitation Networks (SENet)}
 It's the last paper which won CVPR.
@@ -354,8 +356,8 @@ Given the output $U$ of a block with shape $C \times H \times W$ we do:
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/senet.jpg}
-  \caption{SENet block diagram}
+  \includegraphics[width=0.5\linewidth]{./img/senet.jpg}
+  \caption{SENet network block diagram}
 \end{figure}
 
 \subsubsection{Depthwise Separable convolutions}
@@ -366,8 +368,8 @@ Depthwise separable convolutions separates filtering and combination, and this a
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/separable_convolution.png}
-  % \caption{}
+  \includegraphics[width=0.5\linewidth]{./img/separable_convolution.png}
+  \caption{Depthwise Separable convolutions}
 \end{figure}
 
 \subsubsection{Inverted residual blocks}
@@ -377,8 +379,8 @@ Hence, the $3\times 3$ convoltuion operates in the compressed domain.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/bottleneck_residual.jpg}
-  % \caption{}
+  \includegraphics[width=0.4\linewidth]{./img/bottleneck_residual.jpg}
+  \caption{Bottleneck residual block}
 \end{figure}
 
 As we know, compression usually results in information loss, so in MobileNet-v2 inverted residual blocks were proposed.
@@ -387,8 +389,8 @@ To limit the increase in computation, the inner $3\times 3$ convolution is reali
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/inverted_residual.jpg}
-  % \caption{}
+  \includegraphics[width=0.4\linewidth]{./img/inverted_residual.jpg}
+  \caption{Inverted residual block}
 \end{figure}
 
 \subsubsection{MobileNet-v2}
@@ -397,32 +399,32 @@ The number of channels grows slowly compared to previous architectures, as we ca
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/mobilenet.jpg}
-  % \caption{}
-  \label{ref:mobilenet}
+  \includegraphics[width=0.5\linewidth]{./img/mobilenet.jpg}
+  \caption{Mobilenet network architecture}
+  \label{fig:mobilenet}
 \end{figure}
 
 Whenever spatial dimensions or number of channels do not match between input and output, there are no residual connections.
 
 \subsubsection{EfficientNet}
-EfficientNet proposed to design the network based on resources.
-As we know there are 3 dimensions for scaling a neural network: width, depth and resolution.
+EfficientNet proposes designing the network based on available computational resources.  
+There are three main dimensions for scaling a neural network: width, depth, and input resolution.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/efficientnet.jpg}
-  \caption{Different types of NN scaling.}
+  \includegraphics[width=0.9\linewidth]{./img/efficientnet.jpg}
+  \caption{Different types of neural network scaling.}
 \end{figure}
 
-Bigger networks with larger width, depth or resolution tend to achieve higher accuracy, but the accuracy gain quickly saturates after reaching $80 \%$, which is a limitation of single dimenison scaling.
-\textbf{Scaling dimensions are not independent}. Intuitively, for higher resolution images, we should increase network depth, such that the larger receptive fields can help to capture similar features that include more pixels in bigger images.
-Correspondingly, we should also increase netowrk width when the network resolution is higher, in order to capture more fine-grained patterns with more pixels in high resolution images.
+Larger networks with greater width, depth, or resolution tend to achieve higher accuracy. However, the accuracy gains quickly saturate after around $80\%$, highlighting a limitation of scaling along a single dimension.  
+\textbf{The scaling dimensions are not independent.} Intuitively, when increasing image resolution, we should also increase network depth so that larger receptive fields can capture relevant features spanning more pixels.  
+Similarly, increasing width becomes important at higher resolutions to capture fine-grained patterns present in the additional pixel information.
 
-EfficientNet  uses a compound coefficient $\phi$ to scale all dimensions in a principled way.
+EfficientNet addresses this by using a compound coefficient $\phi$ to scale all three dimensions in a balanced and principled way.
 
 \subsection{RNNs \& Transformers}
 
-In RNNs, which were used to avoid the problem of fixed size input, the gradient computetion involves performing a forward propagation pass moving from left to right through the unrolled graph of the network, followed by a backward propagation pass moving right to left through the graph.
+In RNNs, which were used to avoid the problem of fixed size input, the gradient computation involves performing a forward propagation pass moving from left to right through the unrolled graph of the network, followed by a backward propagation pass moving right to left through the graph.
 The basic problem is that by propagating the gradient over many stages it tends to vanish or explode, so learning long-term dependencies can take a lot of time.
 
 \paragraph{Encoder-Decoder architecture}
@@ -433,20 +435,20 @@ If the context $C$ is a vector, then the encoder RNN is simply a sequence-to-vec
 The \textbf{bottleneck problem} arises because the context $C$ outputted by the encoder RNN has a dimension that is too small to properly summarize a long sequence.
 
 \paragraph{Attention}
-Existing model for neural machine translation encode a source sentence into a fixed-length vector from which a decoder generates a translation.
+Existing models for neural machine translation encode a source sentence into a fixed-length vector from which a decoder generates a translation.
 Attention provides a solution to the bottleneck problem. 
 We provide to the decoder the learned token start, then we do the dot product between the start token and the hidden states.
 All the other hidden states give us a probability for each token.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/rnn_classic.png}
+  \includegraphics[width=0.7\linewidth]{./img/rnn_classic.png}
   \caption{In the classic RNN, the last hidden state is used for all the translation.}
 \end{figure}
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.8\linewidth]{./img/attention.png}
+  \includegraphics[width=0.7\linewidth]{./img/attention.png}
   \caption{In the attention mechanism, at each step, the current hidden state is compared with all the previous hidden states by computing an attention score.}
 \end{figure}
 
@@ -483,7 +485,7 @@ To facilitate these residual connections, all sub-layers in the model, as well a
 \paragraph{Transfromer decoder}
 The decoder is also composed of a stack of $N$ identical layers.
 In addition of the two sub-layers of the encoder, the decoder has a third sub-layer, which performs multi-head attention over the output of the encoder stack (cross-attention).
-As in the encoder tehre are residual connections and layer normalization.
+As in the encoder there are residual connections and layer normalization.
 
 The self-attention sub-layer in the decoder stack is modified so as to \textbf{prevent positions from attending to subsequent positions}.
 This masking, combined with the fact that the output embeddings are offset by one position, ensures that the predictions for position $i$ can depend only on the known outputs at positions less than $i$.
@@ -511,7 +513,7 @@ On each of these projected versions of queries, keys, and values we perform the 
 The outputs of different heads are then concatenated and once again projected.
 Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions.
 
-\paragraph{Multi Head Self-Attention computation}
+% \paragraph{Multi Head Self-Attention computation}
 
 \paragraph{Cross-Attention}
 in the cross attention layers, the queries come from the previous decoder layer (masked self-attention), and the keys and values come from the output of the encoder.
@@ -539,6 +541,12 @@ We also prepend a learnable embedding to the sequence of embedded patches, whose
 The classification head is implemented by a MLP with one hidden layer.
 To retain positional information the ViT uses learnable 1D position embeddings.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{./img/vision_transformer.jpg}
+  \caption{Vision transformer model overview. We split an image into fixed-size patches, linearly embed each of them, add position embeddings, and feed the resulting sequence of vectors to a standard Transformer encoder. In order to perform classification, we use the standard approach of adding an extra learnable “classification token” to the sequence.}
+\end{figure}
+
 At the start, the ViT worked very bad.
 This is because transformers lack some of the inductive biases inherent to CNNs, such as translation equivariance and locality, and therefore do not generalize well when trained on insufficient amounts of data.
 The convolution in combination with max pooling/striding makes CNNs approximately invariant to translation.
@@ -559,18 +567,18 @@ We will now see the three main innovations of the algorithm: the AdaBoost algori
 \paragraph{AdaBoost algorithm}
 A Weak Learner (WL) is a simple classifier whose error is slightly better than random guessing.
 Boosting is a way to train and build an ensemble of $M$ weak classifiers to obtain a Strong Learner SL.
-After training a weak learner, the examples are re-weighted in order to emphasize those which were incorrectly classifier by the previous weak classifier.
+After training a weak learner, the examples are re-weighted in order to emphasize those which were incorrectly classified by the previous weak classifier.
 
 The \textbf{AdaBoost} algorithm steps are:
 \begin{enumerate}
-  \item Given $N$ training samples $(x^(i), y^(i))$, assign equal weight to each training example $w^(i)=\frac{1}{N}$.
+  \item Given $N$ training samples $(x^{(i)}, y^{(i)})$, assign equal weight to each training example $w^{(i)}=\frac{1}{N}$.
   \item Iterate for $j = 1, ..., M$ weak learners:
   \begin{enumerate}
     \item Fit the best classifier $WL_j$ to the training data by using the current weights.
     \item Compute the weighted error rate $\epsilon_j = \sum_{i:\, x^{(i)} \text{ is missclassified}} w^{(i)}$.
     \item Compute $\beta_j = \frac{1 - \epsilon_j}{\epsilon_j}$.
-    \item Updates weights $w^(i) = w^(i)\beta_j$ for wrongly classified examples.
-    \item Re-normalize $w^(i)$ to sum to 1.
+    \item Updates weights $w^{(i)} = w^{(i)}\beta_j$ for wrongly classified examples.
+    \item Re-normalize $w^{(i)}$ to sum to 1.
   \end{enumerate}
   \item The Strong Learner is given by a weighted majority vote $SL(x) = \sum_{j} \ln \beta_j WL_j(x) > 0$, con $\ln \beta_j = \alpha_j$.
 \end{enumerate}
@@ -599,11 +607,13 @@ We can compute the value of $II(i,j)$ just by looking at the 3 neighbors: $II(i,
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/integral_images.jpg}
+  \includegraphics[width=0.3\linewidth]{./img/integral_images.jpg}
   \caption{$II(1,2) = II(1,1) + II(0,2) - II(0,1) + I(1,2) = 14 + 11 - 5 + 1$}
+  \label{fig:integral_images}
 \end{figure}
 
 With integral images we could have an overflow problem if numbers get too big.
+We can see an example of the calculation in the image \ref{fig:integral_images}
 
 \begin{figure}[htbp]
   \centering
@@ -625,7 +635,7 @@ The key idea is then to reject most of the easy background patches with a simple
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/cascade_classifier.png}
+  \includegraphics[width=0.8\linewidth]{./img/cascade_classifier.png}
   \caption{We use more and more features for face detection classifier after classifier}
 \end{figure}
 
@@ -649,7 +659,7 @@ The solution is to use region proposals.
 
 \subsubsection{Region proposals}
 Region proposal algorithms inspect the image and attempt to find regions of an image that likely contain an object.
-The algorithm as a first step oversegments the image into highly uniform regions, and then, based on similarity scores of color, texture and size it iteratively aggregates them.
+The algorithm as a first step oversegments the image into highly uniform regions, and then, \textbf{based on similarity scores of color, texture and size} it iteratively aggregates them.
 
 \begin{figure}[htbp]
   \centering
@@ -664,7 +674,7 @@ As we can see in \ref{fig:rcnn} we run selective search to get about 2000 propos
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/rcnn.jpg}
+  \includegraphics[width=0.8\linewidth]{./img/rcnn.jpg}
   \caption{R-CNN network architecture}
   \label{fig:rcnn}
 \end{figure}
@@ -678,7 +688,7 @@ This results in a faster networks since we don't have to apply 2000 CNN forward 
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/fastrcnn.png}
+  \includegraphics[width=0.8\linewidth]{./img/fastrcnn.png}
   \caption{Fast R-CNN network architecture}
   \label{fig:fastrcnn}
 \end{figure}
@@ -695,7 +705,7 @@ To do RoI pooling, given a region:
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/roipool.png}
+  \includegraphics[width=0.7\linewidth]{./img/roipool.png}
   \caption{RoI pooling.}
 \end{figure}
 
@@ -706,7 +716,7 @@ In Faster R-CNN they introduced a RPN (Region Proposal Network), which learns to
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/fasterrcnn.png}
+  \includegraphics[width=0.8\linewidth]{./img/fasterrcnn.png}
   \caption{Faster R-CNN network architecture.}
 \end{figure}
 
@@ -716,30 +726,27 @@ Region Proposal Networks are applied to a small $3\times 3$ window, which is app
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/rpn.jpg}
+  \includegraphics[width=0.7\linewidth]{./img/rpn.jpg}
   \caption{Region Proposal Network architecture.}
   \label{fig:rpn}
 \end{figure}
 
 When the objectness score is low, the localization head produces its output, but it's meaningless and it will be ignored.
 
-\paragraph{Region Proposal Network with anchor}
-We can simplify the creation of proposals.
-An easier task may be to correct an input proposal, as done in R-CNN.
+\paragraph{Region Proposal Network with Anchors}
+The process of generating object proposals can be simplified. Instead of predicting proposals from scratch, it is easier to refine a set of initial reference boxes, similar to the approach used in R-CNN.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.6\linewidth]{./img/rpn_anchor.jpg}
-  \caption{Our proposal here is a fixed scale and aspect-ratio box, known as anchor.}
+  \caption{An anchor is a reference box with fixed scale and aspect ratio.}
 \end{figure}
 
-Objects have different scales and asepct ratios, so we use several anchors with different scale and aspect ratios.
-The RPN predicts $k$ objectness scores and $k$ corrections.
+Since objects vary in scale and aspect ratio, we use multiple anchors at each spatial location, each with a different combination of scale and aspect ratio. The RPN predicts $k$ objectness scores and $k$ bounding box refinements for the $k$ anchors at each location.
 
-When training RPNs, given an image and a ground truth bounding box if the anchor has a low IoU with all ground-truth boxes in an image, it's considered as background.
+During training, for a given image and its ground-truth bounding boxes, an anchor is labeled as background if it has low Intersection over Union (IoU) with all ground-truth boxes in the image.
 
-In standard Faster-RCNN, the RPN processes only the last activation of the feature extractor, which is a semantically rich signal since it includes higher level features than previous activations, but very coarse in spatial resolution.
-Even if small scale anchors are provided, it may miss objects smaller than the grid size.
+In standard Faster R-CNN, the RPN operates on the final activation layer of the feature extractor. This feature map contains rich semantic information due to its depth in the network, but has low spatial resolution. As a result, even with small-scale anchors, \textbf{the RPN might fail to detect objects that are smaller than the grid size} of the feature map.
 
 % slide 62/71
 \subsubsection{Feature Pyramid Network (FPN)}
@@ -752,16 +759,16 @@ But different stages of a CNN have different input sizes (more channels as we go
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/fpn.jpg}
+  \includegraphics[width=0.7\linewidth]{./img/fpn.jpg}
   \caption{Feature Pyramid Network architecture.}
 \end{figure}
 
-Feature Pyramid Networks overcome this problem by mergoing coarser but higher level features with less effective but more spatially localized features.
+Feature Pyramid Networks overcome this problem by merging coarser but higher level features with less effective but more spatially localized features.
 This has a limited computational overhead.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/fpnsum.jpg}
+  \includegraphics[width=0.7\linewidth]{./img/fpnsum.jpg}
   \caption{FPN top down path and lateral connections.}
   \label{fig:fpnsum}
 \end{figure}
@@ -777,7 +784,7 @@ Then we can do the usual processing with the RPN and the per-region MLP.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/frcnn_fpn.png}
+  \includegraphics[width=0.8\linewidth]{./img/frcnn_fpn.png}
   \caption{Faster R-CNN with FPN architecture; as we can see we use the FPN together with the convolutional feature extractor.}
   \label{fig:frcnn_fpn}
 \end{figure}
@@ -794,13 +801,17 @@ Instead of a RPN we could try to do all the job by using anchors, since the only
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\linewidth]{./img/one_stage_detector.png}
+  \includegraphics[width=0.8\linewidth]{./img/one_stage_detector.png}
   \caption{in one-stage detectors we can stack the outputs in a combined single tensor with the appropriate number of channels.}
 \end{figure}
 
 \subsubsection{SSD: Single Shot MultiBox Detector}
-Multiple detectors, which are $3\times 3$ convolutions with $k_s \times (C + 1 + 4)$ output channels where $k_s$ is the number of anchors at that scale, are applied to several activations in the backbone (VGG in this example) and to other activations, created by extending the number of convolutional layers.
 
+SSD applies multiple detection heads, implemented as $3 \times 3$ convolutions, across several feature maps. Each detector outputs $k_s \times (C + 1 + 4)$ channels, where $k_s$ is the number of anchors per location at that scale, $C$ is the number of classes, 1 accounts for the background class, and 4 corresponds to bounding box coordinates.
+
+These detectors are applied both to intermediate feature maps from the backbone network (e.g., VGG) and to additional feature maps generated by stacking extra convolutional layers beyond the backbone.
+
+\newpage
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\linewidth]{./img/ssd.jpg}
@@ -809,8 +820,7 @@ Multiple detectors, which are $3\times 3$ convolutions with $k_s \times (C + 1 +
 
 \subsubsection{YOLOv3}
 
-YOLOv3 uses a custom backbone (DarkNet-53), optimized to have a good trade-off between classification accuracy and speed.
-It uses the idea of multi-scale detections on features with different spatial resolutions, as in FPN but it concatenates $(C)$ activations from different stages instead of summing them.
+YOLOv3 employs a custom backbone called DarkNet-53, which balances classification accuracy and inference speed. It performs detections at multiple scales by concatenating feature maps from different stages, similar to an FPN (Feature Pyramid Network) but using concatenation instead of addition.
 
 \begin{figure}[htbp]
   \centering
@@ -818,84 +828,91 @@ It uses the idea of multi-scale detections on features with different spatial re
   \caption{YOLOv3 architecture}
 \end{figure}
 
-Anchors size and aspect ratios are learned by running k-means clustering on ground-truth boxes on a specific dataset.
-We use anchor because we want to start as close as possible to a good solution.
-The produced anchors are similar on different datasets.
+Anchor boxes (sizes and aspect ratios) are determined via k-means clustering on the ground-truth bounding boxes of the training dataset. By initializing predictions close to these clustered anchors, the network can converge more quickly. In practice, the resulting anchors tend to be similar across various datasets.
 
-\subsubsection{Retina Net}
+\subsubsection{RetinaNet}
 
-Retina Net is a plain one-stage detector built on top of standard ResNets with FPN.
-Classification and regression heads are stacks of $3\times 3$ convolutions and do not share parameters (which is the main difference with RPN) as they are solving tasks which require different representations.
+RetinaNet is a one-stage detector built on top of a standard ResNet backbone with an integrated Feature Pyramid Network (FPN). It has separate classification and regression “heads,” each composed of stacked $3\times3$ convolutional layers. Unlike RPN (Region Proposal Network), these heads do not share parameters, since classification and bounding-box regression require different feature representations.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\linewidth]{./img/retina_net.jpg}
-  \caption{Retina Net architecture}
+  \caption{RetinaNet architecture}
 \end{figure}
 
-\paragraph{The problem of class imbalance}
-Object detection is an imbalanced problem: the number of negative boxes far outweighs the number of objects in a typical image.
-This imbalance causes two problems:
+\paragraph{The class-imbalance challenge}
+In object detection, the number of negative (background) anchors far exceeds the number of positive (object) anchors. This imbalance causes two main issues:
+
 \begin{enumerate}
-  \item The "easy negatives" can overwhelm training and lead to suboptimal models, which are less effective at discriminating between negative and positive examples.
-  \item Training is inefficient as most locations in a randomly sampled mini-batch are "easy negatives" (negatives with low objectness score) that contribute no useful learning signal.
+  \item “Easy” negatives (anchors with low objectness scores) can dominate the loss, making it hard for the model to learn to discriminate between hard negatives and true positives.
+  \item Most randomly sampled mini-batches will contain predominantly easy negatives, providing little useful gradient signal and slowing down training.
 \end{enumerate}
 
-Two stage classifiers partially and naturally solve these problems, because they implicitly sample "hard negatives" by training only on the top scored proposals, which are more likely to contain hard-to-discriminate regions.
+Two-stage detectors mitigate this by sampling “hard” negatives: only high-scoring region proposals are passed to the second stage. By contrast, one-stage detectors must train on all anchors, including many easy negatives.
 
-One-stage detectors, instead, are trained on the full set of anchors and, if negative samples are randomly selected, a mini-batch will on average contain most, if not all, easy negatives.
+\paragraph{Focal loss}
+To address this, RetinaNet uses focal loss, which down-weights easy examples and focuses training on hard examples. For a binary classification task, the standard cross-entropy (CE) loss is
+\[
+\mathcal{L}_{\text{CE}}(p, y) \;=\; -\bigl[y \ln(p) + (1 - y)\ln(1 - p)\bigr],
+\]
+where $p$ is the model's estimated probability that $y=1$. Defining 
+\[
+p_t = 
+\begin{cases}
+p, & \text{if } y = 1,\\
+1 - p, & \text{if } y = 0,
+\end{cases}
+\]
+we can write $\mathcal{L}_{\text{CE}}(p, y) = -\ln(p_t)$.
 
-Retina Net proposes to work at the loss level.
-Let's consider for simplicity a binary classification problem; the usual Cross Entropy loss in the binary case is:
-$$\mathcal{L} = -(y \times \ln(p) + (1-y) \times \ln(1-p))$$
-
-$$BCE(p, y) = \left\{ \begin{array}{rcl}
-  - \ln(p) & \mbox{if } y = 1 \\
-  - \ln(1-p) & \mbox{otherwise}
-\end{array}\right.$$
-Where $p$ is the probability assigned by the model to have label $y=1$.
-
-We can do a variable change $-\ln(p) \rightarrow p$.
-For notational convenience, we can define the probability of the true class as:
-$$p_t = \left\{ \begin{array}{rcl}
-  - p & \mbox{if } y = 1 \\
-  - 1-p & \mbox{otherwise}
-\end{array}\right.$$
-And rewrite $BCE(p,y) = BCE(p_t) = -\ln(p_t)$
-
-\paragraph{Focal Loss and Retina Net}
-The standard CE loss has a non-trivial magnitude even when examples are correctly classified, i.e. when $p_t >> 0.5$, which are the easy examples.
-When summed over lots of easy examples of the negative class, these small loss values can overwhelm the rarer hard negative examples.
-To down-weigh easy examples, we can use the (binary) focal loss $BFL(p_t) = -(1-p_t)^\gamma \ln p_t$.
-Where $\gamma$ is a tunable focusing hyper parameter (which is usually left to 2, with $\gamma = 0$ we would have the binary crossentropy).
-
-If the model training is going good, the loss is small but most of the loss is on the easy negatives.
-$\gamma$ helps to keep the loss dominated by the hard targets to classify.
-For example, with $\gamma = 2$:
+The focal loss introduces a modulating factor $(1 - p_t)^\gamma$:
+\[
+\mathcal{L}_{\text{FL}}(p_t) \;=\; -(1 - p_t)^\gamma \ln(p_t),
+\]
+where $\gamma \ge 0$ is a focusing parameter (commonly $\gamma=2$). When $p_t$ is large (an “easy” example), $(1 - p_t)^\gamma$ becomes small, reducing the loss. For example:
 \begin{itemize}
-  \item $p_t = 0.9$ then $(1-p_t)^2 = (0.1)^2 = 0.01 = \frac{1}{100}$. The Focal Loss is $\times 100$ smaller than Cross Entropy loss, so when we are highly confident and doing good predictions the loss is weighted down.
-  \item $p_t = 0.6$ then $(1-p_t)^2 = (0.4)^2 = 0.16 = \frac{1}{6}$.
-  \item $p_t = 0.1$ then $(1-p_t)^2 = (0.9)^2 = 0.81 = \frac{4}{5}$. The FL is similar to CE loss.
+  \item If $p_t = 0.9$, then $(1 - p_t)^\gamma = (0.1)^2 = 0.01$, so the focal loss is 100$\times $ smaller than the CE loss.
+  \item If $p_t = 0.6$, then $(1 - p_t)^\gamma = (0.4)^2 = 0.16$.
+  \item If $p_t = 0.1$, then $(1 - p_t)^\gamma = (0.9)^2 = 0.81$, making the focal loss close to the CE loss.
 \end{itemize}
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.9\linewidth]{./img/focal_loss.jpg}
-  \caption{Focal Loss}
-\end{figure}
+\paragraph{Class weighting}
+In addition to focal loss, RetinaNet applies standard class weights to balance the relative importance of positive and negative examples. Class weights ensure that errors on the minority class (foreground) receive higher weight, while focal loss focuses learning on hard examples within each class. Combining both mechanisms yields more stable and effective training.
 
-\paragraph{Class weights}
-Imbalanced classes are usually handled by class weights.
-Class weights serve a complementary purpose with respect to the focal loss: class weights balance the relative importance of errors in the positive or negative class; focal loss lets the training focus on hard example within each class.
+\subsubsection{Key differences between YOLOv3 and RetinaNet}
 
-In Retina Net we use both class weights and focal loss to have a better training.
+\begin{itemize}
+  \item \textbf{Backbone and feature fusion}:
+    \begin{itemize}
+      \item YOLOv3 uses DarkNet-53 and concatenates feature maps from different stages for multi-scale predictions.
+      \item RetinaNet uses ResNet with an explicit FPN, which sums feature maps across levels and applies separate heads at each pyramid level.
+    \end{itemize}
+  \item \textbf{Detection heads}:
+    \begin{itemize}
+      \item YOLOv3 predicts boxes and class scores on a grid of three scales directly from concatenated features.
+      \item RetinaNet has separate stacks of convolutional layers for classification and regression on each FPN level.
+    \end{itemize}
+  \item \textbf{Loss functions}:
+    \begin{itemize}
+      \item YOLOv3 uses binary cross-entropy (BCE) for classification and mean squared error (or IoU-based loss) for bounding-box regression.
+      \item RetinaNet uses focal loss for classification (to address class imbalance) and smooth $L_1$ loss for bounding-box regression.
+    \end{itemize}
+  \item \textbf{Anchor initialization}:
+    \begin{itemize}
+      \item YOLOv3 learns anchoring by running k-means clustering on ground-truth boxes of the dataset.
+      \item RetinaNet uses a fixed set of anchors defined by scale and aspect ratio at each FPN level (often chosen based on prior knowledge).
+    \end{itemize}
+\end{itemize}
 
 \subsubsection{Multi-label classification}
-In YOLOv3 the assignment of the class to the box is treated as a multi-label classification problem, instead of a multi class problem: each detected box can have from 1 to $C$ classes, which are not assumed to be mutually exclusive.
-Hence, given the scores predicted by the classification head, YOLOv3 does not use a softmax function to compute one probability function over the set of classes, but $C$ independent sigmoids, to compute the probability of the box belonging to each class independently.
 
-The classification box then becomes the sum of $C$ binary cross entropy terms.
-Therefore, we don't need to add a background class, since it's represented by a ground-truth vector of 0s, and it's detected at test time when all classification scores are below the detection threshold.
+In YOLOv3, class prediction for each bounding box is treated as a multi-label classification task, rather than a multi-class one: a single box can be assigned one or more of the $C$ classes, which are not assumed to be mutually exclusive.
+
+As a result, YOLOv3 does not apply a softmax function to produce a single probability distribution over classes. Instead, it uses $C$ independent sigmoid activations—one per class—to estimate the probability that the box belongs to each class individually.
+
+The classification loss for each box is then the sum of $C$ binary cross-entropy losses, one for each class.
+
+Because the background is implicitly represented by a ground-truth vector of all zeros, there is no need to explicitly introduce a background class. At inference time, a box is considered background if all class scores fall below the detection threshold.
 
 \subsubsection{CenterNet}
 Anchors-based detectors, either two or one stage ones, have some limits:
@@ -961,7 +978,7 @@ There are no proposals, since we must process each pixel, which is even slower t
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/slow_rcnn_segmentation.jpg}
+  \includegraphics[width=0.8\linewidth]{./img/slow_rcnn_segmentation.jpg}
   \caption{Network architecture for Slow R-CNN for segmentation}
 \end{figure}
 
@@ -987,7 +1004,7 @@ Then the network uses a single upsampling step by a factor of 32 (hence the name
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/fcn32.jpg}
+  \includegraphics[width=0.8\linewidth]{./img/fcn32.jpg}
   \caption{Network architecture for FCN-32s}
 \end{figure}
 
@@ -1000,7 +1017,7 @@ This results to better spatial detail, with more accurate segmentation than FCN-
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/fcn16.png}
+  \includegraphics[width=0.8\linewidth]{./img/fcn16.png}
   \caption{Network architecture for FCN-16s}
 \end{figure}
 
@@ -1014,38 +1031,6 @@ In the FCN-8s we can consider one more intermediate layer (2 skip connections) w
 \end{figure}
 
 With the VGG backbone, no more improvements were found after predicting from stride 8 activations (2 skip connections).
-
-% \subsubsection{Transposed convoltuions}
-
-% Convolutions with a stride bigger than 1 are a form of learnable downsampling.
-% Can we invert them to have learnable upsampling?
-
-% \begin{figure}[htbp]
-%   \centering
-%   \includegraphics[width=0.7\linewidth]{./img/fractional_conv.png}
-%   \caption{Fractionally strided convolutions move the kernel on the input at a lower pace than with stride 1}
-%   \label{fig:fractional_conv}
-% \end{figure}
-
-% Fractionally strided convolutions move slower than standard convolutions.
-% We achieve this by introducing zeros in the feature map.
-% Now we can get an output which is bigger than the input, like in the example in the image \ref{fig:fractional_conv} where we get a $5\times 5$ output from a $3\times 3$ input.
-% But this is not what happens in reality, because we use transposed convolutions.
-
-% Transposed convolutions can be realized without expanding the output.
-% A transposed convolution with stride 2 (which corresponds to a fractionally strided convolution with stride $\frac{1}{2}$) can be realized by moving the kernel on the output by 2 pixels for each pixel in the input and reweighting it by the input pixel.
-
-% The idea with transposed convolutions is to train the kernel to create a bigger feature map (upsampling).
-% By sliding the kernel on the remaining input pixels we can recover the same output image we obtained with fractionally strided convolutions.
-
-% \begin{figure}[htbp]
-%   \centering
-%   \includegraphics[width=0.7\linewidth]{./img/transposed_conv.jpg}
-%   \caption{After the first convolution calculation, of $1 \times$ the convolutional kernel, the kernel moves of 2 positions in the output image, and where there is overlap the pixels get summed}
-% \end{figure}
-
-% Transposed convolutions are referred to also with the name of upconvolutions or fractionally strided convolutions.
-% Their use may generate checkboard artifacts in the output for generative tasks, but they don't really affect our segmentation task.
 
 \subsubsection{Transposed Convolutions}
 
@@ -1096,69 +1081,55 @@ The operations are mainly three:
   \caption{A zoom of the U-net middle layers}
 \end{figure}
 
-\subsubsection{Dilated convolutions}
+\subsubsection{Dilated Convolutions}
 
-This semantically rich feature map at a certain stage comes from the fact that a position in a feature map collects a lot of spatial information in the channel through the concept of receptive field.
-The problem of previous stages being less semantically rich comes from their receptive field, because they consider less information.
-The idea of dilated convolutions is to try to address the issue at a different layer enlarging the receptive field without touching the computation.
-The idea was introduced with the concept of dilated convolutions.
-Dilated convolutions consider a large receptive field by taking positions far away from the center and putting zeros in between.
+At later stages of a CNN, feature maps become semantically rich because each position captures information from a large receptive field. Earlier layers, however, have smaller receptive fields and therefore less semantic understanding.
+
+Dilated convolutions were introduced to expand the receptive field without increasing computational cost or reducing resolution. This is achieved by inserting gaps (zeros) between kernel elements, allowing the convolution to cover a wider area without increasing the number of parameters.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.7\linewidth]{./img/dilated_convolutions.jpg}
-  \caption{A simple $3 \times 3$ kernel has a dilation factor of 1. A dilation rate of 2 means that i introduced a layer of zeros in the feature map.}
+  \caption{A standard $3 \times 3$ kernel has a dilation rate of 1. Increasing the dilation rate to 2 inserts a layer of zeros between kernel elements, expanding the receptive field.}
 \end{figure}
 
-We recall that Resnet in each stage has combination of blocks that perform convolutions with batch normalization.
-The first layer of each stage of Resnet lowers the resolution with striding and doubles the channel.
-Instead of using striding they kept the same striding but changed the dilation rate.
-Within the same stage now the blocks don't change resolution (same striding).
-If we don't halve the resolution we are doing a lot more computation with lots of more channels.
-Also, the output feature map is bigger because we have no striding.
-But this is good, since we are doing segmentation and need more semantic information.
+In ResNet, each stage consists of convolutional blocks followed by batch normalization. Typically, the first block in each stage reduces the spatial resolution (via striding) and doubles the number of channels. Instead, with dilated convolutions, the stride is kept the same, but the dilation rate is increased—allowing the resolution to be preserved across blocks within the same stage.
+
+This results in larger feature maps and higher memory usage since the spatial dimensions remain large and the number of channels still increases. However, this is beneficial for tasks like semantic segmentation, where preserving spatial detail is important.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.7\linewidth]{./img/dilated_resnet.jpg}
-  \caption{Normal Resnet vs the one with dilated convolutions}
+  \caption{Standard ResNet vs. ResNet with dilated convolutions}
 \end{figure}
 
-They applied this at different stages of the Resnet backbone, to increase the receptive field.
-This uses much more memory but has the same computational cost.
-
-If we modify all the stages with dilated convolutions this becomes too costly since we aren't modifying the input size.
-While the operation we perform is constant the size of the channel still doubles.
+Dilated convolutions were applied to specific stages of the ResNet backbone to selectively expand the receptive field. Applying them to every stage would increase memory usage significantly, since the input size remains unchanged and the channel width continues to grow.
 
 \subsubsection{DeepLab}
 
-
-ResNet with dilated convolutions are the backbones used in DeepLab, the reference model for semantic segmentation, to control the resolution of the output feature map.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.7\linewidth]{./img/deeplab.jpg}
-  \caption{Deeplab v3 network architecture}
-\end{figure}
-
-To handle the problem of the existence of objects at multiple scales, DeepLab introduces a block of operations known as spatial pyramid pooling based on dilated convolutions.
-
-This combination of operations took inspiration from a concept known as spatial pyramid pooling from DeepLab v2.
-Spatial Pyramid Pooling can be seen as an extension of global average pooling that preserves spatial information.
-DeepLab emulates the property of the Spatial Pyramid Pooling layer to capture spatial context at multiple scales by leveraging again atrous convolutions.
-In DeepLab v2, the module performs $3 \times 3$ convolutions with increasing dilation rates.
-Outputs are concatenated and aggregated by a scoring $1\times 1$ convoltuion to produce the output scores map (we can do this because we are not changing the resolution).
+DeepLab, a reference model for semantic segmentation, uses ResNet with dilated (atrous) convolutions as its backbone to control the resolution of the output feature maps.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/deeplab_v2.png}
-  \caption{Deeplab v2 network architecture}
+  \includegraphics[width=0.9\linewidth]{./img/deeplab.jpg}
+  \caption{DeepLab v3 network architecture}
 \end{figure}
 
-When the dilation rate grows, the number of positions where all the 9 weights of the kernel are used shrinks.
-It was discovered that a dilation rate of 24 was too big, since only one weight was used, so it was removed.
+To address the challenge of detecting objects at multiple scales, DeepLab introduces a module called Atrous Spatial Pyramid Pooling (ASPP), which builds on the concept of spatial pyramid pooling using dilated convolutions.
 
-They also added a context feature in DeepLab v3, so they took all the whole feature map and applied global average pooling.
+This idea originated in DeepLab v2, inspired by traditional spatial pyramid pooling. Unlike global average pooling, spatial pyramid pooling preserves spatial structure while aggregating multi-scale context. DeepLab emulates this property using atrous convolutions with different dilation rates.
+
+In DeepLab v2, the ASPP module applies several parallel $3 \times 3$ atrous convolutions with increasing dilation rates. These outputs are then concatenated and passed through a $1 \times 1$ convolution to produce the final score map. This works effectively since the spatial resolution is preserved throughout the process.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.5\linewidth]{./img/deeplab_v2.png}
+  \caption{DeepLab v2 network architecture}
+\end{figure}
+
+However, as the dilation rate increases, the kernel becomes increasingly sparse—resulting in fewer effective weights being applied. It was observed that a dilation rate of 24 was too large: in many cases, only one weight in the $3 \times 3$ kernel was applied, diminishing its effectiveness. As a result, such high dilation rates were discarded.
+
+In DeepLab v3, a global context feature was also added by applying global average pooling over the entire feature map, which further enhances the model's ability to capture large-scale semantic information.
 
 \subsubsection{Instance segmentation}
 Semantic segmentation separates different classes at the pixel level, but doesn't separate different instances of the same class.
@@ -1179,7 +1150,7 @@ The task of instance segmentation lays at the intersection of the two. It can be
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/mask_rcnn.png}
+  \includegraphics[width=0.8\linewidth]{./img/mask_rcnn.png}
   \caption{Mask R-CNN network architecture}
 \end{figure}
 
@@ -1196,7 +1167,7 @@ The RoI align doesn't snap the RoI to the grid, but it divides into equally size
 
 \subsection{Metric Learning}
 
-By removing the classification head of an image classification network we can compute a low-dimesnional representation (a low dimensional embedding) of the input images.
+By removing the classification head of an image classification network we can compute a low-dimensional representation (a low dimensional embedding) of the input images.
 Performing nearest neighbor search on such embedding vectors is very effective: we get semantically similar images as neighbors.
 
 \subsubsection{Face recognition}
@@ -1231,18 +1202,19 @@ This is usually solved by learning a similarity function between images and a th
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{./img/face_verification.jpg}
+  \includegraphics[width=0.8\linewidth]{./img/face_verification.jpg}
   \caption{The distance between the images must be under the threshold}
 \end{figure}
 
 \subsubsection{Metric Learning}
-The idea of metric learning, or similarity learning, is to use a specific loss at training time to guide the feature extractor to favor a clustered structure of the embedding such that:
+Metric learning, also known as similarity learning, aims to train a model to produce feature embeddings where:
+
 \begin{enumerate}
-  \item The distance between faces of the same person (the intra-class distance) is minimized.
-  \item The distance between faces of different persons (the inter-class distance) is maximized.
+  \item The distance between embeddings of the same identity (intra-class distance) is minimized.
+  \item The distance between embeddings of different identities (inter-class distance) is maximized.
 \end{enumerate}
 
-We have to learn discriminative embeddings:
+The objective is to learn highly discriminative embeddings:
 
 \begin{figure}[htbp]
   \centering
@@ -1250,9 +1222,8 @@ We have to learn discriminative embeddings:
   \caption{The key concept of metric learning}
 \end{figure}
 
-\subsubsection{Siamese network training}
-A siamese network learns to compare two inputs.
-It consists in two identical subnetworks (with the same architecture and shared weights) that process two different inputs and then compare their outputs to determine how similar or different the inputs are.
+\subsubsection{Siamese Network Training}
+A Siamese network is designed to compare two input samples. It consists of two identical subnetworks (sharing both architecture and weights) that independently process two inputs, and then compare their outputs to determine their similarity.
 
 \begin{figure}[htbp]
   \centering
@@ -1260,86 +1231,87 @@ It consists in two identical subnetworks (with the same architecture and shared 
   \caption{Siamese network architecture}
 \end{figure}
 
-The goal is to compute a loss that depends on two input examples.
-The embeddings are compared using a loss function $L(f(x^{(i)}), f(x^{(j)}))$.
+The model is trained by computing a loss function over pairs of examples:  
+$$L(f(x^{(i)}), f(x^{(j)}))$$
 
-After producing this embedding space, we can pass a new test image through the network, and then apply a $k-$NN classifier on the embedding space.
-By doing this, adding new identities is easy, since the embedding space doesn't have to be changed.
+Once trained, the network can embed new images into this learned feature space. A $k$-nearest neighbor classifier can then be used in this space to classify unseen identities. This approach allows new identities to be added without retraining the model.
 
-\paragraph{Contrastive loss}
+\paragraph{Contrastive Loss}
 
-Treating face verification as classification may not generalize well in open-world problems.
-A loss enforcing directly a clustered embedding structure should:
+Standard classification-based approaches may not generalize well in open-world settings like face verification. Instead, contrastive loss directly enforces a clustered structure in the embedding space:
+
 \begin{itemize}
-  \item make $d(x^{(i)}, x^{(j)})$ small, if $x^{(i)}$ and $x^{(j)}$ depict the same person.
-  \item make $d(x^{(i)}, x^{(j)})$ large, if $x^{(i)}$ and $x^{(j)}$ depict two different persons.
+  \item For matching pairs (same identity), the embedding distance $d(x^{(i)}, x^{(j)})$ should be small.
+  \item For non-matching pairs (different identities), the distance should be large.
 \end{itemize}
 
-If the Euclidean norm is used $d(x^{(i)}, x^{(j)}) = \|f(x^{(i)}) - f(x^{(j)})\|_2$ a simple loss that capture both requirements is:
+Using Euclidean distance $d(x^{(i)}, x^{(j)}) = \|f(x^{(i)}) - f(x^{(j)})\|_2$, a basic contrastive loss can be defined as:
+
 $$
 L\left(f(x^{(i)}), f(x^{(j)})\right) = 
 \begin{cases}
-\|f(x^{(i)}) - f(x^{(j)})\|_2^2 & \text{if } y^{(i,j)} = +1 \\
+\|f(x^{(i)}) - f(x^{(j)})\|_2^2 & \text{if } y^{(i,j)} = 1 \\
 -\|f(x^{(i)}) - f(x^{(j)})\|_2^2 & \text{if } y^{(i,j)} = 0
 \end{cases}
 $$
 
-We can note that the first term is bounded from below at 0, but the second one is unbounded (the clusters can be infinitely different).
-There is practically no gain in pushing clusters further away when they are already far "enough".
+However, this loss is not well-balanced: the second term is unbounded and can lead to over-separation between classes.
 
-A formulation less prone to overfitting uses a margin $m$ to stop pushing clusters of different classes apart from each other, i.e.
+To mitigate this, a \textbf{margin} $m$ is introduced to limit the influence of dissimilar pairs once they are sufficiently far apart:
+
 $$
 L\left(f(x^{(i)}), f(x^{(j)})\right) = 
 \begin{cases}
-\|f(x^{(i)}) - f(x^{(j)})\|_2^2 & \text{if } y^{(i,j)} = +1 \\
-\max (0, m - \|f(x^{(i)}) - f(x^{(j)})\|_2^2 \,) & \text{if } y^{(i,j)} = 0
+\|f(x^{(i)}) - f(x^{(j)})\|_2^2 & \text{if } y^{(i,j)} = 1 \\
+\max \left(0, m - \|f(x^{(i)}) - f(x^{(j)})\|_2^2 \right) & \text{if } y^{(i,j)} = 0
 \end{cases}
 $$
 
-\paragraph{Triplet loss}
+\paragraph{Triplet Loss}
 
-To obtain an effective embedding, we must make embedding vectors similar for the same person, and different for different persons.
-And we must satisfy both conditions at once.
+Triplet loss provides a more direct way to enforce the desired structure in the embedding space by considering triplets of images: an anchor $A$, a positive $P$ (same identity), and a negative $N$ (different identity). The loss encourages:
 
-The contrastive loss achieves this effect indirectly, by reasoning on every pair in the triplet of images.
-The triplet loss, instead, optimizes the embedding to better fulfil both requirements at once.
 $$\| f(P) - f(A) \|_2^2 < \| f(N) - f(A) \|_2^2$$
 
-But the triplet loss isn't robust, since it doesn't guarantee that inter-class distances are large.
-It also risks training collapse: if the embedding is a constant value (e.g. all 0s) the criteria is satisfied.
+However, this formulation alone is insufficient—it may still allow degenerate solutions (e.g., all embeddings collapse to a constant vector). To address this, a margin $m$ is introduced:
+
+$$\| f(P) - f(A) \|_2^2 + m < \| f(N) - f(A) \|_2^2$$
+
+This ensures that the negative example is not just farther than the positive, but at least by a margin. Compared to contrastive loss, triplet loss does not force all embeddings of the same class to collapse to a single point, making training more flexible.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.7\linewidth]{./img/triplet_loss.png}
-  \caption{Triplet loss}
+  \caption{Triplet loss: learning to rank embeddings}
 \end{figure}
 
-As we can see, the distance between the green and the red dot is smaller than the distance between the green and the blue one.
-But the blue and the green one should be closer.
-With a margin, triplet loss learns to rank.
+In the illustration, the blue and green dots represent the same identity, while the red dot is a different one. The network learns to position the red (negative) farther from the anchor (blue) than the positive (green).
 
-$$\| f(P) - f(A) \|_2^2 + m < \| f(N) - f(A) \|_2^2$$
+\paragraph{Triplet Selection and Semi-Hard Mining}
 
-It doesn't impose all the pictures of the same person to collapse in a point, hence it may be easier to learn than contrastive loss.
+A critical challenge in training with triplet loss is how to form informative triplets. For most random triplets, the margin condition is already satisfied and won't contribute to learning.
 
-The most important part in training embeddings with the triplet loss it to effectively form the triplets, because the choice of negative examples is key.
-For most triplets, the constraint $\| f(P) - f(A) \|_2^2 + m < \| f(N) - f(A) \|_2^2$ will be already satisfied.
-We want to compute the loss only on triplets which will contribute to learning.
-
-Hence, a large mini-batch of $B$ samples is formed by picking a fixed number of images for $D$ identities, to ensure that a significant representation of the anchor-positive distance can be formed, and randomly sampled negatives are added to complete the batch.
-We have:
+To make training effective:
 \begin{itemize}
-  \item Hard triplets: triplets where the negative is closer to the anchor than the positive
-  \item Semi hard triplets: triplets where the negative is not closer to the anchor than the positive, but which still have positive loss.
+  \item Large mini-batches are formed by selecting a fixed number of images for each of $D$ identities.
+  \item All anchor-positive pairs are formed within each identity.
+  \item Negative samples are selected based on their distance to the anchor to form meaningful triplets.
 \end{itemize}
 
-Semi-hard negatives are the best to train on.
-To do semi-hard negative mining, at the beginning of each epoch:
+There are two important types of triplets:
 \begin{itemize}
-  \item Compute all the embeddings on the training set (using the network trained so far).
-  \item Create all the possible (anchors, positive) pairs for each identity.
-  \item Create a triplet for each semi-hard negative $N$ if $\| f(P) - f(A) \|_2^2 < \| f(N) - f(A) \|_2^2 < \| f(P) - f(A) \|_2^2 + m$ (a negative example that is within the margin).
+  \item \textbf{Hard triplets}: where the negative is closer to the anchor than the positive.
+  \item \textbf{Semi-hard triplets}: where the negative is farther than the positive, but still violates the margin condition.
 \end{itemize}
 
-We don't select the hardest negatives (the ones where $\| f(P) - f(A) \|_2^2 > \| f(N) - f(A) \|_2^2$) because it was found to lead to poor training, probably because then training is domintaed by mislabeled or poorly imaged faces.
+\textbf{Semi-hard negatives} are ideal for training. To find them, the following steps are performed at the start of each epoch:
+\begin{itemize}
+  \item Compute all embeddings for the training set using the current model.
+  \item For each identity, create all valid (anchor, positive) pairs.
+  \item For each such pair, find negatives $N$ such that:  
+  $$\| f(P) - f(A) \|_2^2 < \| f(N) - f(A) \|_2^2 < \| f(P) - f(A) \|_2^2 + m$$
 
+These are considered semi-hard because they fall within the margin.
+\end{itemize}
+
+Avoiding the \textbf{hardest negatives} is important since they often correspond to mislabeled or low-quality images, which can degrade training performance.
